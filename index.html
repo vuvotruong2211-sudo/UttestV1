@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TUAN TU EXPRESS</title>
+<title>WELCOME TO TUAN TU EXPRESS</title>
 <script>
   const CONFIG = {
     webAppUrl: "https://script.google.com/macros/s/AKfycbxqRQeV5vAc2iCoaOlJrz0U6jw6vsjy2uDWGjLClxJYaDaYF98NHHRU4yp9FBH29OaA/exec",
@@ -208,6 +208,24 @@
   .thuchi-photo-status.uploading{color:var(--amber);}
   .thuchi-photo-status.ok{color:var(--green);}
   .thuchi-photo-status.error{color:var(--red);}
+
+  /* TRANG CHẤM CÔNG RIÊNG (page-chamcong) — không nằm trong .modal-box nên
+     cần style input/select riêng để đồng bộ với toàn hệ thống. */
+  #chamCongLoginView input[type=password],
+  #chamCongLoginView input[type=month]{
+    display:block;width:100%;height:42px;box-sizing:border-box;
+    background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+    padding:0 12px;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;
+    outline:none;margin-bottom:12px;
+  }
+  #chamCongLoginView input[type=password]{text-align:center;letter-spacing:4px;font-size:16px;}
+  #chamCongLoginView input[type=password]:focus,
+  #chamCongLoginView input[type=month]:focus{border-color:var(--accent);}
+  #chamCongLoginView .nv-picker-row{margin-bottom:0;}
+
+  /* Nhãn nhỏ phía trên 1 ô input/select — dùng chung cho mọi cổng đăng nhập
+     (Đăng nhập tổng, Phiếu lương, Thu-Chi, Nghỉ phép, Chấm công) để đồng bộ thị giác */
+  .field-label{font-size:11px;color:var(--text3);display:block;margin:12px 0 4px;}
 
   /* ĐĂNG KÝ NGHỈ PHÉP / OFF */
   .nghiphep-btn{display:flex;align-items:center;gap:6px;background:var(--accent);border:none;border-radius:8px;padding:9px 14px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:opacity .2s;}
@@ -478,15 +496,16 @@
      NV-PICKER — Dropdown Văn phòng + Combobox gõ/chọn tên NV
      Dùng chung cho 4 cổng: Đăng nhập tổng, Phiếu lương, Thu-Chi, Nghỉ phép
      ============================================================ */
-  .nv-picker-row{display:flex;gap:8px;margin-bottom:12px;}
-  .nv-picker-vp{
-    flex:0 0 38%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;
-    padding:10px 10px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;outline:none;
+  .nv-picker-row{display:flex;gap:8px;margin-bottom:12px;align-items:stretch;}
+  .nv-picker-vp,.nv-picker-ten{
+    height:42px;box-sizing:border-box;
+    background:var(--surface2);border:1px solid var(--border);border-radius:7px;
+    color:var(--text);font-size:13px;font-family:'Inter',sans-serif;outline:none;
   }
+  .nv-picker-vp{flex:0 0 38%;min-width:0;padding:0 10px;}
   .nv-picker-vp:focus{border-color:var(--accent);}
   .nv-picker-ten{
-    flex:1;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:7px;
-    padding:10px 12px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;outline:none;
+    flex:1;min-width:0;padding:0 12px;
     text-align:left;letter-spacing:normal;
   }
   .nv-picker-ten:focus{border-color:var(--accent);}
@@ -532,6 +551,7 @@
     <div class="modal-title">🔐 Đăng nhập xem lịch làm việc</div>
     <div class="modal-sub">Chọn tên và nhập passcode cá nhân (dùng chung với phiếu lương)</div>
     <select id="loginNVSelect" style="display:none;"></select>
+    <label class="field-label" style="margin-top:0;">Văn phòng / Tên nhân viên</label>
     <div class="nv-picker-row">
       <select id="loginVPSelect" class="nv-picker-vp" onchange="onNVPickerVPChange('login')"></select>
       <input type="text" id="loginNVInput" class="nv-picker-ten" list="loginNVDatalist"
@@ -539,6 +559,7 @@
              oninput="onNVPickerInput('login')" onchange="onNVPickerInput('login')">
       <datalist id="loginNVDatalist"></datalist>
     </div>
+    <label class="field-label">Passcode</label>
     <input type="password" id="loginPasscodeInput" maxlength="6" inputmode="numeric" placeholder="Passcode 6 số" autocomplete="off">
     <div class="modal-err" id="loginErr">Passcode không đúng hoặc không tìm thấy nhân viên.</div>
     <div class="modal-actions">
@@ -554,6 +575,7 @@
       <div class="modal-title">🔐 Xem phiếu lương</div>
       <div class="modal-sub">Chọn tên, tháng và nhập passcode cá nhân để xem phiếu lương</div>
       <select id="payrollNVSelect" style="display:none;"></select>
+      <label class="field-label" style="margin-top:0;">Văn phòng / Tên nhân viên</label>
       <div class="nv-picker-row">
         <select id="payrollVPSelect" class="nv-picker-vp" onchange="onNVPickerVPChange('payroll')"></select>
         <input type="text" id="payrollNVInput" class="nv-picker-ten" list="payrollNVDatalist"
@@ -561,10 +583,12 @@
                oninput="onNVPickerInput('payroll')" onchange="onNVPickerInput('payroll')">
         <datalist id="payrollNVDatalist"></datalist>
       </div>
+      <label class="field-label">Tháng / Năm</label>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <select id="payrollMonthSelect" style="flex:1;margin-bottom:0;"></select>
         <select id="payrollYearSelect" style="flex:1;margin-bottom:0;"></select>
       </div>
+      <label class="field-label">Passcode</label>
       <input type="password" id="payrollPasscodeInput" maxlength="6" inputmode="numeric" placeholder="Passcode 6 số" autocomplete="off">
       <div class="modal-err" id="payrollErr">Passcode không đúng hoặc chưa có dữ liệu. Vui lòng thử lại.</div>
       <div class="modal-actions">
@@ -626,6 +650,7 @@
       <div class="modal-title">🔐 Thu-Chi / Báo cáo doanh số</div>
       <div class="modal-sub">Chọn tên và nhập passcode cá nhân (dùng chung với phiếu lương)</div>
       <select id="thuChiNVSelect" style="display:none;"></select>
+      <label class="field-label" style="margin-top:0;">Văn phòng / Tên nhân viên</label>
       <div class="nv-picker-row">
         <select id="thuChiVPSelect" class="nv-picker-vp" onchange="onNVPickerVPChange('thuChi')"></select>
         <input type="text" id="thuChiNVInput" class="nv-picker-ten" list="thuChiNVDatalist"
@@ -633,6 +658,7 @@
                oninput="onNVPickerInput('thuChi')" onchange="onNVPickerInput('thuChi')">
         <datalist id="thuChiNVDatalist"></datalist>
       </div>
+      <label class="field-label">Passcode</label>
       <input type="password" id="thuChiPasscodeInput" maxlength="6" inputmode="numeric" placeholder="Passcode 6 số" autocomplete="off">
       <div class="modal-err" id="thuChiLoginErr">Passcode không đúng hoặc không tìm thấy nhân viên.</div>
       <div class="modal-actions">
@@ -765,6 +791,7 @@
       <div class="modal-title">🌴 Đăng ký nghỉ phép / OFF</div>
       <div class="modal-sub">Chọn tên và nhập passcode cá nhân (dùng chung với phiếu lương)</div>
       <select id="nghiPhepNVSelect" style="display:none;"></select>
+      <label class="field-label" style="margin-top:0;">Văn phòng / Tên nhân viên</label>
       <div class="nv-picker-row">
         <select id="nghiPhepVPSelect" class="nv-picker-vp" onchange="onNVPickerVPChange('nghiPhep')"></select>
         <input type="text" id="nghiPhepNVInput" class="nv-picker-ten" list="nghiPhepNVDatalist"
@@ -772,6 +799,7 @@
                oninput="onNVPickerInput('nghiPhep')" onchange="onNVPickerInput('nghiPhep')">
         <datalist id="nghiPhepNVDatalist"></datalist>
       </div>
+      <label class="field-label">Passcode</label>
       <input type="password" id="nghiPhepPasscodeInput" maxlength="6" inputmode="numeric" placeholder="Passcode 6 số" autocomplete="off">
       <div class="modal-err" id="nghiPhepLoginErr">Passcode không đúng hoặc không tìm thấy nhân viên.</div>
       <div class="modal-actions">
@@ -1201,6 +1229,7 @@
             <div id="chamCongLoginView">
               <div class="modal-sub" style="margin-bottom:14px;">Chọn tên và nhập passcode cá nhân (dùng chung với phiếu lương) để xem chấm công.</div>
               <select id="chamCongNVSelect" style="display:none;"></select>
+              <label class="field-label" style="margin-top:0;">Văn phòng / Tên nhân viên</label>
               <div class="nv-picker-row">
                 <select id="chamCongVPSelect" class="nv-picker-vp" onchange="onNVPickerVPChange('chamCong')"></select>
                 <input type="text" id="chamCongNVInput" class="nv-picker-ten" list="chamCongNVDatalist"
@@ -1208,8 +1237,13 @@
                        oninput="onNVPickerInput('chamCong')" onchange="onNVPickerInput('chamCong')">
                 <datalist id="chamCongNVDatalist"></datalist>
               </div>
+
+              <label class="field-label">Passcode</label>
               <input type="password" id="chamCongPasscodeInput" maxlength="6" inputmode="numeric" placeholder="Passcode 6 số" autocomplete="off">
-              <input type="month" id="chamCongThangInput" style="margin-top:0;">
+
+              <label class="field-label">Tháng xem chấm công</label>
+              <input type="month" id="chamCongThangInput">
+
               <div class="modal-err" id="chamCongLoginErr">Passcode không đúng hoặc chưa có dữ liệu.</div>
               <div class="modal-actions">
                 <button class="modal-btn-confirm" style="width:100%;" onclick="submitChamCongLogin()">Xem chấm công</button>
