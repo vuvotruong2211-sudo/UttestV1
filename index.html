@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TUAN TU EXPRESS</title>
+<title>WELCOME TO TUAN TU EXPRESS</title>
 <script>
   const CONFIG = {
     webAppUrl: "https://script.google.com/macros/s/AKfycbxqRQeV5vAc2iCoaOlJrz0U6jw6vsjy2uDWGjLClxJYaDaYF98NHHRU4yp9FBH29OaA/exec",
@@ -557,13 +557,122 @@
   .off-bar{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-top:4px;}
   .off-fill{height:100%;border-radius:2px;background:var(--amber);}
 
-  /* RESPONSIVE */
-  @media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr);}.main-grid{grid-template-columns:1fr;}.bottom-grid{grid-template-columns:1fr;}}
-  @media(max-width:768px){.kpi-grid{grid-template-columns:1fr 1fr;}.htitle{font-size:13px;}}
-
   /* ============================================================
-     APP SHELL — Sidebar bong bóng (kiểu Messenger) + khung nội dung
+     RESPONSIVE — 3 tầng breakpoint
+     - ≤1200px : tablet ngang / laptop nhỏ
+     - ≤768px  : tablet đứng / mobile lớn
+     - ≤480px  : mobile phổ thông (iPhone 14, Samsung S)
+     - ≤390px  : mobile nhỏ (iPhone SE, màn 360px)
      ============================================================ */
+
+  /* --- TABLET NGANG / LAPTOP NHỎ ≤1200px --- */
+  @media(max-width:1200px){
+    .kpi-grid{grid-template-columns:repeat(3,1fr);}
+    .main-grid{grid-template-columns:1fr;}
+    .bottom-grid{grid-template-columns:1fr;}
+  }
+
+  /* --- TABLET ĐỨNG / MOBILE LỚN ≤768px --- */
+  @media(max-width:768px){
+    /* Header */
+    .header{padding:10px 14px;}
+    .htitle{font-size:12px;}
+    .hsub{font-size:10px;}
+    .header-right{gap:6px;}
+    .sync-btn span{display:none;} /* ẩn chữ "Đồng bộ", chỉ giữ icon */
+    .sync-btn{padding:8px 10px;}
+    #userBadge{font-size:11px;padding:5px 9px;}
+
+    /* Sidebar */
+    .app-sidebar{width:56px;padding:12px 4px;gap:6px;}
+    .bubble-btn{width:44px;padding:5px 2px;}
+    .bubble-icon{width:36px;height:36px;font-size:16px;}
+    .bubble-label{display:none;}
+    .app-content{padding:12px 10px;}
+
+    /* KPI */
+    .kpi-grid{grid-template-columns:1fr 1fr;}
+    .kpi-val{font-size:22px;}
+
+    /* Grid */
+    .main-grid{grid-template-columns:1fr;}
+    .bottom-grid{grid-template-columns:1fr;}
+
+    /* Bảng lịch làm việc */
+    .schedule-table th,.schedule-table td{padding:5px 4px;font-size:10px;}
+    .ca-badge{font-size:9px;padding:2px 4px;}
+
+    /* Filter bar */
+    .filter-bar{flex-wrap:wrap;gap:6px;}
+    .filter-select{font-size:11px;padding:5px 7px;}
+
+    /* Modal */
+    .modal-box{padding:18px;border-radius:14px;}
+    .nghiphep-modal-box{width:98vw;max-width:98vw;padding:14px;}
+    .thuchi-modal-box{width:98vw;max-width:98vw;}
+    .payroll-modal-box{width:98vw;max-width:98vw;}
+  }
+
+  /* --- MOBILE PHỔ THÔNG ≤480px --- */
+  @media(max-width:480px){
+    /* Header gọn hơn */
+    .header{padding:8px 10px;}
+    .htitle{font-size:11px;}
+    .hsub{display:none;} /* ẩn dòng phụ HCM-QN·HCM-ĐL trên mobile nhỏ */
+    .theme-btn{width:32px;height:32px;font-size:14px;}
+    .admin-btn{padding:6px 8px;font-size:10px;}
+    #userBadge{font-size:10px;padding:4px 8px;gap:5px;}
+
+    /* Sidebar nhỏ hơn */
+    .app-sidebar{width:48px;padding:10px 2px;gap:4px;}
+    .bubble-btn{width:40px;padding:4px 1px;}
+    .bubble-icon{width:32px;height:32px;font-size:14px;}
+    .app-content{padding:10px 8px;}
+
+    /* KPI 1 cột */
+    .kpi-grid{grid-template-columns:1fr 1fr;}
+    .kpi-val{font-size:20px;}
+    .kpi-label{font-size:10px;}
+    .kpi-card{padding:10px 12px;}
+
+    /* Card */
+    .card-header{padding:10px 12px;}
+    .card-body{padding:12px;}
+    .card-title{font-size:12px;}
+
+    /* Bảng lịch */
+    .schedule-table th,.schedule-table td{padding:4px 3px;font-size:9px;}
+    .week-nav{font-size:11px;}
+
+    /* NV-picker 2 dòng trên mobile nhỏ */
+    .nv-picker-row{flex-direction:column;gap:6px;}
+    .nv-picker-vp{flex:none;width:100%;}
+    .nv-picker-ten{flex:none;width:100%;}
+
+    /* Modal full width */
+    .modal-box{width:96vw;max-width:96vw;padding:16px;border-radius:12px;}
+    .modal-actions{flex-direction:column;}
+    .modal-actions button{width:100%;}
+
+    /* Bảng tin */
+    .news-title{font-size:15px;}
+    .news-card{padding:14px 14px;}
+    .news-card-title{font-size:14px;}
+    .news-card-body{font-size:12px;}
+  }
+
+  /* --- MOBILE NHỎ ≤390px (iPhone SE, màn 360px) --- */
+  @media(max-width:390px){
+    .header{padding:7px 8px;}
+    .app-sidebar{width:44px;padding:8px 2px;gap:4px;}
+    .bubble-icon{width:30px;height:30px;font-size:13px;}
+    .app-content{padding:8px 6px;}
+    .kpi-grid{grid-template-columns:1fr 1fr;}
+    .kpi-val{font-size:18px;}
+    .htitle{font-size:10px;}
+    .sync-btn{display:none;} /* ẩn hoàn toàn nút sync trên mobile rất nhỏ — dùng icon đồng bộ trong header là đủ */
+  }
+
   .app-shell{display:flex;min-height:calc(100vh - 65px);}
 
   .app-sidebar{
@@ -615,13 +724,6 @@
   .app-page{display:none;}
   .app-page.active{display:block;}
 
-  @media(max-width:768px){
-    .app-sidebar{width:60px;padding:14px 4px;gap:6px;}
-    .bubble-btn{width:48px;padding:6px 2px;}
-    .bubble-icon{width:38px;height:38px;font-size:17px;}
-    .bubble-label{display:none;}
-    .app-content{padding:14px;}
-  }
 
   /* TIN TỨC FEED */
   .news-feed{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px;}
@@ -681,7 +783,7 @@
   <div class="header-left">
     <div class="logo">🚌</div>
     <div>
-      <div class="htitle">TUẤN TÚ EXPRESS - KHẲNG ĐỊNH CHẤT LƯỢNG</div>
+      <div class="htitle">Dashboard Lịch Làm Việc</div>
       <div class="hsub">Vận tải hành khách & hàng hoá · HCM – QN · HCM – ĐL</div>
     </div>
   </div>
@@ -1475,6 +1577,7 @@ function initAuth(){
     hideLoginGate();
     updateUserBadge();
     loadNewsFeed(); // đã đăng nhập sẵn -> tải ngay bảng tin (trang chủ)
+    loadData();     // tải ngay lịch làm việc, không cần bấm nút thủ công
   }else{
     showLoginGate();
   }
@@ -1552,7 +1655,8 @@ async function submitLoginSchedule(){
     updateUserBadge();
     populateFilters(); // đồng bộ lại danh sách Văn phòng/NV trong filter sau khi đăng nhập
     applyFilters();
-    loadNewsFeed(); // trang chủ sau đăng nhập = bảng tin, tải ngay
+    loadData();        // tự động tải lịch làm việc sau khi đăng nhập, không cần bấm nút
+    loadNewsFeed();    // trang chủ sau đăng nhập = bảng tin, tải ngay
   }catch(e){
     errEl.textContent='Lỗi: '+e.message+' (có thể passcode sai)';
     errEl.style.display='block';
@@ -1703,7 +1807,13 @@ function fetchJSONP(url){
 }
 
 async function loadData(){
-  const url=(document.getElementById('webAppUrl').value||'').trim();
+  // Ưu tiên đọc URL từ CONFIG (set cứng, luôn có sẵn) thay vì từ ô input
+  // để tránh race condition khi auto-load lúc trang mới mở
+  const url=(
+    (typeof CONFIG!=='undefined'&&CONFIG.webAppUrl)
+    ? CONFIG.webAppUrl
+    : (document.getElementById('webAppUrl').value||'').trim()
+  );
   if(!url){setStatus('⚠️ Chưa nhập Apps Script URL','warn');return;}
 
   showLoading('Đang kết nối Apps Script...');
