@@ -807,8 +807,8 @@
     <img id="loginLogo" src="" alt="Logo" style="display:block;width:88px;height:88px;object-fit:contain;margin:0 auto 14px;border-radius:50%;">
     <div id="loginWelcomeTitle" style="text-align:center;font-size:16px;font-weight:700;margin-bottom:4px;"></div>
     <div id="loginWelcomeSub" style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:16px;"></div>
-    <div class="modal-title">🔐 Đăng nhập xem lịch làm việc</div>
-    <div class="modal-sub">Chọn tên và nhập passcode cá nhân (dùng chung với phiếu lương)</div>
+    <div class="modal-title">🔐 Thành công lớn nhất của con người là biến đam mê thành thu nhập</div>
+    <div class="modal-sub">Chọn hoặc nhập tên - sử dụng passcode nhằm bảo mật thông tin</div>
     <select id="loginNVSelect" style="display:none;"></select>
     <label class="field-label" style="margin-top:0;">Văn phòng / Tên nhân viên</label>
     <div class="nv-picker-row">
@@ -1689,7 +1689,9 @@ function updateUserBadge(){
 
   if(badge){
     badge.style.display='inline-flex';
-    badgeText.textContent=(currentUser.isManager?'🔓 ':'👤 ')+currentUser.nv+(currentUser.isManager?' · Quản lý':' · '+currentUser.boPhan);
+    const roleIcon = currentUser.isSuperManager ? '👑 ' : (currentUser.isManager ? '🔓 ' : '👤 ');
+    const roleLabel = currentUser.isSuperManager ? ' · S.Quản lý' : (currentUser.isManager ? ' · Quản lý' : ' · '+currentUser.boPhan);
+    badgeText.textContent = roleIcon + currentUser.nv + roleLabel;
   }
 
   if(currentUser.isManager){
@@ -1824,13 +1826,14 @@ async function loadData(){
     if(json.status!=='ok')throw new Error(json.message||'Apps Script trả về lỗi');
 
     allData=json.data.map(r=>({
-      date: r.date?(()=>{const p=r.date.split('-');return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]),12,0,0);})():null,
-      thu:  r.thu||'',
-      nv:   r.nv||'',
-      boPhan: r.boPhan||'',
-      caLam:  r.caLam||'',
-      loaiCa: r.loaiCa||'',
-      thang:  parseInt(r.thang)||0,
+      date:     r.date?(()=>{const p=r.date.split('-');return new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]),12,0,0);})():null,
+      thu:      r.thu||'',
+      nv:       r.nv||'',
+      boPhan:   r.boPhan||'',   // VP nhỏ (Bà Điểm, Gò Dưa...) — hiển thị trên lịch
+      vanPhong: r.vanPhong||'', // VP lớn (HCM, Quảng Ngãi, Đà Lạt) — dùng phân quyền
+      caLam:    r.caLam||'',
+      loaiCa:   r.loaiCa||'',
+      thang:    parseInt(r.thang)||0,
     })).filter(r=>r.date&&r.nv);
 
     processData();
@@ -1889,15 +1892,39 @@ function loadDemo(){
 function processData(){populateFilters();populateLoginNVSelect();applyFilters();}
 
 function populateFilters(){
-  const offices=[...new Set(allData.map(r=>r.boPhan).filter(o=>o&&o!=='OFF'))].sort();
-  const nvs=[...new Set(allData.map(r=>r.nv))].sort();
+  const allOffices=[...new Set(allData.map(r=>r.boPhan).filter(o=>o&&o!=='OFF'))].sort();
+  const allNvs=[...new Set(allData.map(r=>r.nv))].sort();
   const months=[...new Set(allData.map(r=>r.thang).filter(Boolean))].sort((a,b)=>a-b);
 
-  // Multi-select Văn phòng — mọi người (NV thường lẫn Quản lý) đều chọn tự do,
-  // không còn ép cứng/khoá theo Văn phòng cố định của người đăng nhập, và có thể
-  // chọn nhiều văn phòng cùng lúc để so sánh lịch làm việc.
+  // Xác định VP và NV được phép xem theo phân quyền
+  const isSuperManager=currentUser&&currentUser.isSuperManager;
+  const isManager=currentUser&&currentUser.isManager;
+  // vanPhong = VP lớn (HCM/Quảng Ngãi/Đà Lạt) — dùng phân quyền
+  // boPhan   = VP nhỏ (Bà Điểm/Gò Dưa/LHP...) — chỉ dùng hiển thị
+  const myVP=currentUser?(currentUser.vanPhong||currentUser.boPhan):'';
+
+  // squanly: xem tất cả VP | quanly/nhanvien: chỉ VP lớn của mình
+  const normVP=(s)=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+  const myVPNorm=normVP(myVP);
+
+  // visibleOffices = danh sách VP nhỏ (boPhan) mà user được phép thấy
+  // Lọc: chỉ giữ các boPhan mà có ít nhất 1 dòng dữ liệu thuộc VP lớn của mình
+  const visibleOffices=isSuperManager
+    ? allOffices
+    : myVPNorm
+      ? [...new Set(allData.filter(r=>!normVP(r.vanPhong)||normVP(r.vanPhong)===myVPNorm).map(r=>r.boPhan).filter(o=>o&&o!=='OFF'))].sort()
+      : allOffices;
+
+  // NV được hiện trong filter: chỉ NV thuộc VP lớn được phép xem
+  const visibleNvs=isSuperManager
+    ? allNvs
+    : myVPNorm
+      ? [...new Set(allData.filter(r=>{const rvp=normVP(r.vanPhong);return !rvp||rvp===myVPNorm;}).map(r=>r.nv))].sort()
+      : allNvs;
+
+  // Multi-select Văn phòng
   const officeItems=document.getElementById('officeMsItems');
-  officeItems.innerHTML=offices.map(o=>`
+  officeItems.innerHTML=visibleOffices.map(o=>`
     <label class="ms-item">
       <input type="checkbox" value="${o}" ${selectedOffices.includes(o)?'checked':''} onchange="onOfficeCheck(this)">
       <span>${shortOffice(o)}</span>
@@ -1906,7 +1933,7 @@ function populateFilters(){
 
   // Multi-select NV
   const nvItems=document.getElementById('nvMsItems');
-  nvItems.innerHTML=nvs.map(n=>`
+  nvItems.innerHTML=visibleNvs.map(n=>`
     <label class="ms-item">
       <input type="checkbox" value="${n}" ${selectedNVs.includes(n)?'checked':''} onchange="onNvCheck(this)">
       <span>${n}</span>
@@ -2028,10 +2055,28 @@ function applyFilters(){
   const ca=document.getElementById('filterCa').value;
   const month=document.getElementById('filterMonth').value;
 
-  // Không giới hạn theo Văn phòng nữa: NV thường lẫn Quản lý đều xem được lịch của
-  // TOÀN BỘ các phòng vé. Multi-select Văn phòng chỉ là bộ lọc tự do (mặc định "Tất cả",
-  // có thể chọn nhiều văn phòng cùng lúc để so sánh).
+  const isSuperManager=currentUser&&currentUser.isSuperManager;
+  // vanPhong = VP lớn (HCM/Quảng Ngãi/Đà Lạt) — dùng phân quyền lọc dữ liệu
+  // boPhan   = VP nhỏ (Bà Điểm/Gò Dưa/LHP...) — chỉ dùng hiển thị trên lịch
+  const myVP=currentUser?(currentUser.vanPhong||currentUser.boPhan):'';
+  // Chuẩn hoá tên VP để so sánh không phân biệt hoa thường/khoảng trắng thừa
+  const normVP=(s)=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+  const myVPNorm=normVP(myVP);
+
+  // Kiểm tra xem vanPhong có đang hoạt động không (cột J đã có dữ liệu)
+  // Nếu TOÀN BỘ allData đều không có vanPhong → cột J chưa điền/chưa authorize
+  // → tạm thời bỏ filter VP để NV vẫn thấy được lịch
+  const hasVanPhongData = allData.some(r => r.vanPhong && r.vanPhong.trim());
+
   filteredData=allData.filter(r=>{
+    // Giới hạn theo phân quyền VP — tầng bảo vệ chính
+    // squanly: xem tất cả | quanly + nhanvien: chỉ VP mình
+    if(!isSuperManager && myVPNorm && hasVanPhongData){
+      // Chỉ lọc theo VP khi đã có dữ liệu vanPhong trong cột J
+      const rvp = normVP(r.vanPhong);
+      if(rvp && rvp !== myVPNorm) return false;
+    }
+    // Filter tuỳ chọn (multi-select VP/NV — trong phạm vi được phép)
     if(selectedOffices.length>0&&!selectedOffices.includes(r.boPhan))return false;
     if(selectedNVs.length>0&&!selectedNVs.includes(r.nv))return false;
     if(ca&&r.loaiCa!==ca)return false;
@@ -2966,16 +3011,26 @@ function renderChamCongTable(data, nv, m, y){
 
   const gioChuanPhut=data.gioChuanPhut||510; // mặc định 8h30 nếu thiếu
 
+  // Chuẩn hoá tên NV để so sánh không phân biệt hoa thường/dấu
+  // (allData từ Apps Script A có thể dùng định dạng tên khác Master_NV ở Apps Script B)
+  const normNV=(s)=>String(s||'').trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/đ/g,'d').replace(/[^a-z0-9]/g,'');
+  const nvNorm=normNV(nv);
+
   html+=`<table class="attendance-table"><thead><tr>
     <th>Ngày</th><th>Ca lịch</th><th>Địa điểm</th><th>Vào thực tế</th><th>Ra thực tế</th><th>Đi trễ/sớm</th><th>Về sớm/OT</th>
   </tr></thead><tbody>`;
 
   chamCongDates.forEach(ds=>{
-    // chamCong[ds] giờ là ARRAY các lượt check-in/out trong ngày (có thể nhiều địa điểm/nhiều ca)
-    const entries=Array.isArray(chamCong[ds])?chamCong[ds]:[chamCong[ds]]; // phòng hờ nếu API cũ trả object đơn
+    const entries=Array.isArray(chamCong[ds])?chamCong[ds]:[chamCong[ds]];
 
-    // Lấy TẤT CẢ ca theo lịch trong ngày, sắp theo giờ bắt đầu sớm nhất trước
-    const lichRows=allData.filter(r=>r.nv===nv&&r.date&&fmtDate(r.date)===ds&&r.loaiCa!=='OFF');
+    // So sánh tên NV không phân biệt hoa thường để khớp giữa 2 Apps Script
+    const lichRows=allData.filter(r=>
+      normNV(r.nv)===nvNorm &&
+      r.date && fmtDate(r.date)===ds &&
+      r.loaiCa!=='OFF'
+    );
     const lichSorted=lichRows.map(r=>({row:r, parsed:parseCaLamViecJS(r.caLam)}))
       .sort((a,b)=>{
         const av=a.parsed?a.parsed.startMin:9999;
@@ -2984,49 +3039,56 @@ function renderChamCongTable(data, nv, m, y){
       });
 
     const [yy,mm,dd]=ds.split('-');
-
     const isMultiShift=entries.length>1;
 
     entries.forEach((cc,idx)=>{
-      // Ghép theo thứ tự: lượt chấm công thứ idx <-> ca lịch thứ idx (đã sort cùng theo giờ)
       const matched=lichSorted[idx]||lichSorted[lichSorted.length-1]||null;
       const caLamDisplay=matched?(matched.row.caLam||matched.row.loaiCa):'—';
       const ca=matched?matched.parsed:null;
 
-      const vaoStr=minToHHMM(cc.vaoMin);
-      const raStr=minToHHMM(cc.raMin);
+      // Chuẩn hoá: coi undefined và null như nhau
+      const vaoMin=(cc.vaoMin!==null&&cc.vaoMin!==undefined&&!isNaN(cc.vaoMin))?Number(cc.vaoMin):null;
+      const raMin=(cc.raMin!==null&&cc.raMin!==undefined&&!isNaN(cc.raMin))?Number(cc.raMin):null;
 
+      const vaoStr=minToHHMM(vaoMin);
+      const raStr=minToHHMM(raMin);
+
+      // Đi trễ / Vào sớm
       let trangThai='—';
-      if(ca&&cc.vaoMin!==null&&cc.vaoMin!==undefined){
-        const tre=cc.vaoMin-ca.startMin;
-        if(tre>0)trangThai=`<span class="att-warn">Trễ ${tre} phút</span>`;
-        else if(tre<0)trangThai=`<span class="att-ok">Sớm ${Math.abs(tre)} phút</span>`;
-        else trangThai=`<span class="att-ok">Đúng giờ</span>`;
-      }else if(matched&&!ca){
-        trangThai='<span style="color:var(--text3);">Không xác định</span>';
+      if(ca&&vaoMin!==null){
+        const tre=vaoMin-ca.startMin;
+        if(tre>0)       trangThai=`<span class="att-warn">Trễ ${tre} phút</span>`;
+        else if(tre<0)  trangThai=`<span class="att-ok">Sớm ${Math.abs(tre)} phút</span>`;
+        else            trangThai=`<span class="att-ok">Đúng giờ</span>`;
+      }else if(!ca&&matched){
+        // Có lịch nhưng parse ca thất bại (vd ca ghi không chuẩn định dạng HH:MM-HH:MM)
+        trangThai='<span style="color:var(--text3);">Ca không xác định</span>';
+      }else if(!matched&&vaoMin!==null){
+        // Có chấm công nhưng không tìm thấy ca trong lịch
+        trangThai='<span style="color:var(--text3);">Không có lịch</span>';
       }
 
-      // Về sớm / OT — theo đúng công thức Excel hiện tại:
-      // - Ca Trực đêm / Tải ra (ca.khongTinhOT=true): LUÔN hiện "—", không tính.
-      // - Ca thường, ĐI TRỄ (Vào thực tế > Vào theo lịch): mốc = Vào_thực_tế + 8h30
-      // - Ca thường, KHÔNG trễ (vào đúng/sớm giờ): mốc = giờ kết thúc ca theo lịch (ca.endMin)
+      // Về sớm / OT
       let veSomOT='—';
-      if(ca&&!ca.khongTinhOT&&cc.vaoMin!==null&&cc.vaoMin!==undefined&&cc.raMin!==null&&cc.raMin!==undefined){
-        const diTre=cc.vaoMin>ca.startMin;
-        const mocKetThuc=diTre?(cc.vaoMin+gioChuanPhut):ca.endMin;
+      if(ca&&!ca.khongTinhOT&&vaoMin!==null&&raMin!==null){
+        const diTre=vaoMin>ca.startMin;
+        const mocKetThuc=diTre?(vaoMin+gioChuanPhut):ca.endMin;
 
-        // Chuẩn hoá raMin cho trường hợp ra sau nửa đêm
-        let raMinAdj=cc.raMin;
+        // Xử lý qua đêm: nếu mốc kết thúc vượt 24h mà raMin nhỏ hơn giờ bắt đầu
+        let raMinAdj=raMin;
         if(mocKetThuc>=24*60&&raMinAdj<ca.startMin)raMinAdj+=24*60;
 
-        const lech=raMinAdj-mocKetThuc; // âm = về sớm, dương = về trễ/OT
-        if(lech<0){
+        const lech=raMinAdj-mocKetThuc;
+        if(lech<-1){
+          // Trừ hao 1 phút để tránh hiện "về sớm 1 phút" do làm tròn giờ
           veSomOT=`<span class="att-warn">Về sớm ${Math.abs(lech)} phút</span>`;
         }else if(lech>30){
           veSomOT=`<span class="att-ok">OT ${lech} phút</span>`;
         }else{
           veSomOT=`<span class="att-ok">Đúng giờ</span>`;
         }
+      }else if(ca&&ca.khongTinhOT&&vaoMin!==null&&raMin!==null){
+        veSomOT='<span style="color:var(--text3);">Ca đặc biệt</span>';
       }
 
       const rowClass=isMultiShift?'att-multishift':'';
@@ -3047,6 +3109,7 @@ ${idx===0?`<td class="att-date-cell"${isMultiShift?` rowspan="${entries.length}"
   html+=`</tbody></table>`;
   return html;
 }
+
 
 // ============================================================
 // PHẢN HỒI - KHIẾU NẠI PHIẾU LƯƠNG (kèm chữ ký canvas)
@@ -4257,7 +4320,11 @@ window.addEventListener('load',()=>{
   const url = (typeof CONFIG!=='undefined'&&CONFIG.webAppUrl) ? CONFIG.webAppUrl : '';
   if(url) {
     document.getElementById('webAppUrl').value=url;
-    loadData();
+    // Tải lần đầu — nếu Apps Script đang cold-start (~3-5s) có thể timeout
+    // → retry tự động 1 lần sau 8s nếu allData vẫn rỗng
+    loadData().catch(()=>{
+      setTimeout(()=>{ if(!allData||allData.length===0) loadData(); },8000);
+    });
   }
   updateWeekLabel();
 });
