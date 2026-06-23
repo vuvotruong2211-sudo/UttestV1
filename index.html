@@ -1577,7 +1577,7 @@ function initAuth(){
     hideLoginGate();
     updateUserBadge();
     loadNewsFeed(); // đã đăng nhập sẵn -> tải ngay bảng tin (trang chủ)
-    loadData();     // tải ngay lịch làm việc, không cần bấm nút thủ công
+    // loadData() KHÔNG gọi ở đây — window.onload sẽ gọi 1 lần duy nhất sau khi DOM sẵn sàng
   }else{
     showLoginGate();
   }
@@ -1792,37 +1792,47 @@ function normalizeLoaiCa(loai,caLam){
 // ============================================================
 // LOAD TỪ APPS SCRIPT — JSONP (bypass CORS hoàn toàn)
 // ============================================================
-function fetchJSONP(url){
+function fetchJSONP(url, timeoutMs){
+  timeoutMs = timeoutMs || 45000; // tăng lên 45s — Apps Script cold-start có thể mất 20-30s
   return new Promise((resolve,reject)=>{
-    const cb='_cb'+Date.now();
+    const cb='_cb'+Date.now()+'_'+Math.floor(Math.random()*10000);
     const script=document.createElement('script');
     const timer=setTimeout(()=>{
       cleanup();
-      reject(new Error('Timeout 20s — Kiểm tra lại URL hoặc quyền truy cập Apps Script'));
-    },20000);
+      reject(new Error('Timeout — Apps Script chưa phản hồi sau '+Math.round(timeoutMs/1000)+'s'));
+    },timeoutMs);
     window[cb]=(data)=>{clearTimeout(timer);cleanup();resolve(data);};
     script.onerror=()=>{clearTimeout(timer);cleanup();reject(new Error('Không gọi được Apps Script. Kiểm tra URL và quyền "Anyone".'));};
-    function cleanup(){delete window[cb];if(document.body.contains(script))document.body.removeChild(script);}
-    script.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
+    function cleanup(){delete window[cb];try{if(script.parentNode)script.parentNode.removeChild(script);}catch(e){}}
+    script.src=url+(url.includes('?')?'&':'?')+'callback='+cb+'&_t='+Date.now();
     document.body.appendChild(script);
   });
 }
 
-async function loadData(){
-  // Ưu tiên đọc URL từ CONFIG (set cứng, luôn có sẵn) thay vì từ ô input
-  // để tránh race condition khi auto-load lúc trang mới mở
+// loadData có retry tự động: thử lần 1 → nếu fail thì đợi 10s → thử lần 2
+let _loadDataRunning=false;
+async function loadDataWithRetry(attempt){
+  attempt=attempt||1;
+  if(_loadDataRunning&&attempt===1)return; // tránh chạy song song
+  _loadDataRunning=true;
+
   const url=(
     (typeof CONFIG!=='undefined'&&CONFIG.webAppUrl)
     ? CONFIG.webAppUrl
     : (document.getElementById('webAppUrl').value||'').trim()
   );
-  if(!url){setStatus('⚠️ Chưa nhập Apps Script URL','warn');return;}
+  if(!url){setStatus('⚠️ Chưa nhập Apps Script URL','warn');_loadDataRunning=false;return;}
 
-  showLoading('Đang kết nối Apps Script...');
-  document.getElementById('loadBtn').disabled=true;
+  if(attempt===1){
+    showLoading('Đang kết nối Apps Script...');
+    document.getElementById('loadBtn').disabled=true;
+  }else{
+    showLoading('Kết nối lần '+attempt+'...');
+    setStatus('🔄 Đang thử lại lần '+attempt+'/3...','warn');
+  }
 
   try{
-    const json=await fetchJSONP(url);
+    const json=await fetchJSONP(url, 45000);
     if(json.status!=='ok')throw new Error(json.message||'Apps Script trả về lỗi');
 
     allData=json.data.map(r=>({
@@ -1843,16 +1853,26 @@ async function loadData(){
     setStatus('✅ '+allData.length.toLocaleString()+' bản ghi · '+
       [...new Set(allData.map(r=>r.nv))].length+' nhân viên · '+
       [...new Set(allData.map(r=>r.thang).filter(Boolean))].length+' tháng','ok');
-
     try{localStorage.setItem('llv_url',url);}catch(e){}
+    _loadDataRunning=false;
 
-  }catch(e){
-    setStatus('❌ '+e.message,'err');
+  }catch(err){
+    if(attempt<3){
+      const wait=attempt*10; // lần 2 đợi 10s, lần 3 đợi 20s
+      setStatus('⚠️ Lần '+attempt+' thất bại — thử lại sau '+wait+'s... ('+err.message+')','warn');
+      setTimeout(()=>loadDataWithRetry(attempt+1), wait*1000);
+    }else{
+      setStatus('❌ Thất bại sau 3 lần thử — '+err.message,'err');
+      _loadDataRunning=false;
+    }
   }
 
   hideLoading();
   document.getElementById('loadBtn').disabled=false;
 }
+
+// loadData = alias của loadDataWithRetry để nút "Đồng bộ" và các chỗ gọi cũ vẫn hoạt động
+function loadData(){ _loadDataRunning=false; loadDataWithRetry(1); }
 
 // ============================================================
 // DEMO DATA
@@ -1902,24 +1922,22 @@ function populateFilters(){
   // vanPhong = VP lớn (HCM/Quảng Ngãi/Đà Lạt) — dùng phân quyền
   // boPhan   = VP nhỏ (Bà Điểm/Gò Dưa/LHP...) — chỉ dùng hiển thị
   const myVP=currentUser?(currentUser.vanPhong||currentUser.boPhan):'';
-
-  // squanly: xem tất cả VP | quanly/nhanvien: chỉ VP lớn của mình
   const normVP=(s)=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
   const myVPNorm=normVP(myVP);
+  const hasVanPhongData=allData.some(r=>r.vanPhong&&r.vanPhong.trim());
 
-  // visibleOffices = danh sách VP nhỏ (boPhan) mà user được phép thấy
-  // Lọc: chỉ giữ các boPhan mà có ít nhất 1 dòng dữ liệu thuộc VP lớn của mình
+  // visibleOffices = VP nhỏ (boPhan) mà user được phép thấy
   const visibleOffices=isSuperManager
     ? allOffices
-    : myVPNorm
-      ? [...new Set(allData.filter(r=>!normVP(r.vanPhong)||normVP(r.vanPhong)===myVPNorm).map(r=>r.boPhan).filter(o=>o&&o!=='OFF'))].sort()
+    : myVPNorm && hasVanPhongData
+      ? [...new Set(allData.filter(r=>normVP(r.vanPhong)===myVPNorm).map(r=>r.boPhan).filter(o=>o&&o!=='OFF'))].sort()
       : allOffices;
 
-  // NV được hiện trong filter: chỉ NV thuộc VP lớn được phép xem
+  // visibleNvs = NV thuộc VP lớn của mình
   const visibleNvs=isSuperManager
     ? allNvs
-    : myVPNorm
-      ? [...new Set(allData.filter(r=>{const rvp=normVP(r.vanPhong);return !rvp||rvp===myVPNorm;}).map(r=>r.nv))].sort()
+    : myVPNorm && hasVanPhongData
+      ? [...new Set(allData.filter(r=>normVP(r.vanPhong)===myVPNorm).map(r=>r.nv))].sort()
       : allNvs;
 
   // Multi-select Văn phòng
@@ -2059,22 +2077,19 @@ function applyFilters(){
   // vanPhong = VP lớn (HCM/Quảng Ngãi/Đà Lạt) — dùng phân quyền lọc dữ liệu
   // boPhan   = VP nhỏ (Bà Điểm/Gò Dưa/LHP...) — chỉ dùng hiển thị trên lịch
   const myVP=currentUser?(currentUser.vanPhong||currentUser.boPhan):'';
-  // Chuẩn hoá tên VP để so sánh không phân biệt hoa thường/khoảng trắng thừa
   const normVP=(s)=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
   const myVPNorm=normVP(myVP);
 
-  // Kiểm tra xem vanPhong có đang hoạt động không (cột J đã có dữ liệu)
-  // Nếu TOÀN BỘ allData đều không có vanPhong → cột J chưa điền/chưa authorize
-  // → tạm thời bỏ filter VP để NV vẫn thấy được lịch
-  const hasVanPhongData = allData.some(r => r.vanPhong && r.vanPhong.trim());
+  // Chỉ bật filter phân quyền khi cột J (vanPhong) đã có dữ liệu trong sheet
+  const hasVanPhongData=allData.some(r=>r.vanPhong&&r.vanPhong.trim());
 
   filteredData=allData.filter(r=>{
     // Giới hạn theo phân quyền VP — tầng bảo vệ chính
-    // squanly: xem tất cả | quanly + nhanvien: chỉ VP mình
     if(!isSuperManager && myVPNorm && hasVanPhongData){
-      // Chỉ lọc theo VP khi đã có dữ liệu vanPhong trong cột J
-      const rvp = normVP(r.vanPhong);
-      if(rvp && rvp !== myVPNorm) return false;
+      const rvp=normVP(r.vanPhong);
+      // Lọc chặt: dòng có vanPhong khác VP mình → loại
+      // dòng không có vanPhong (rvp="") → cũng loại để tránh lọt
+      if(rvp !== myVPNorm) return false;
     }
     // Filter tuỳ chọn (multi-select VP/NV — trong phạm vi được phép)
     if(selectedOffices.length>0&&!selectedOffices.includes(r.boPhan))return false;
@@ -4315,16 +4330,12 @@ document.addEventListener('keydown',(e)=>{
 // ============================================================
 window.addEventListener('load',()=>{
   initTheme();
-  initAuth();
-  // Luôn dùng URL cố định từ CONFIG
+  initAuth(); // initAuth KHÔNG gọi loadData nữa
   const url = (typeof CONFIG!=='undefined'&&CONFIG.webAppUrl) ? CONFIG.webAppUrl : '';
   if(url) {
     document.getElementById('webAppUrl').value=url;
-    // Tải lần đầu — nếu Apps Script đang cold-start (~3-5s) có thể timeout
-    // → retry tự động 1 lần sau 8s nếu allData vẫn rỗng
-    loadData().catch(()=>{
-      setTimeout(()=>{ if(!allData||allData.length===0) loadData(); },8000);
-    });
+    // Gọi loadData 1 lần duy nhất — có retry tự động nếu Apps Script cold-start
+    loadData();
   }
   updateWeekLabel();
 });
