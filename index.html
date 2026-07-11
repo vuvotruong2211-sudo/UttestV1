@@ -24,11 +24,15 @@
     welcomeTitle: "Chào mừng đến với Tuấn Tú",
     welcomeSub: "Đăng nhập để thực hiện tiện ích"
   };
-  // Áp dụng theme sớm để tránh nháy màu khi load trang
+  // Áp dụng theme + skin sớm để tránh nháy màu khi load trang
   (function(){
     try{
       const t=localStorage.getItem('llv_theme');
       if(t==='light')document.documentElement.setAttribute('data-theme','light');
+    }catch(e){}
+    try{
+      const s=localStorage.getItem('llv_skin');
+      if(s&&s!=='aurora')document.documentElement.setAttribute('data-skin',s);
     }catch(e){}
   })();
 </script>
@@ -69,6 +73,44 @@
     --glass-bg-orb1: rgba(79,110,247,0.18);
     --glass-bg-orb2: rgba(124,58,237,0.14);
     --glass-bg-orb3: rgba(16,185,129,0.12);
+  }
+
+  /* ===== LIQUID GLASS — SKIN (bảng màu) — đổi cảm giác kính mà không đổi cấu trúc =====
+     Aurora = mặc định (không cần data-skin). 3 lựa chọn thêm bên dưới, áp qua [data-skin].
+     Mỗi skin có 1 bản cho nền tối (mặc định) + 1 bản riêng cho [data-theme="light"]
+     vì độ mờ (alpha) cần thấp hơn hẳn trên nền sáng để không bị chói. */
+  [data-skin="sunset"] {
+    --accent:#f97316; --accent2:#ec4899;
+    --glass-bg-orb1: rgba(249,115,22,0.55);
+    --glass-bg-orb2: rgba(236,72,153,0.45);
+    --glass-bg-orb3: rgba(250,204,21,0.30);
+  }
+  [data-theme="light"][data-skin="sunset"] {
+    --glass-bg-orb1: rgba(249,115,22,0.18);
+    --glass-bg-orb2: rgba(236,72,153,0.14);
+    --glass-bg-orb3: rgba(250,204,21,0.12);
+  }
+  [data-skin="ocean"] {
+    --accent:#06b6d4; --accent2:#22c55e;
+    --glass-bg-orb1: rgba(6,182,212,0.55);
+    --glass-bg-orb2: rgba(34,197,94,0.40);
+    --glass-bg-orb3: rgba(59,130,246,0.30);
+  }
+  [data-theme="light"][data-skin="ocean"] {
+    --glass-bg-orb1: rgba(6,182,212,0.18);
+    --glass-bg-orb2: rgba(34,197,94,0.14);
+    --glass-bg-orb3: rgba(59,130,246,0.12);
+  }
+  [data-skin="mono"] {
+    --accent:#64748b; --accent2:#94a3b8;
+    --glass-bg-orb1: rgba(148,163,184,0.35);
+    --glass-bg-orb2: rgba(100,116,139,0.30);
+    --glass-bg-orb3: rgba(203,213,225,0.22);
+  }
+  [data-theme="light"][data-skin="mono"] {
+    --glass-bg-orb1: rgba(148,163,184,0.14);
+    --glass-bg-orb2: rgba(100,116,139,0.10);
+    --glass-bg-orb3: rgba(203,213,225,0.10);
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   html{font-size:14px;}
@@ -793,6 +835,15 @@
       <div class="sync-dot"></div>
       <span>Đồng bộ</span>
     </button>
+    <div style="position:relative;">
+      <button class="theme-btn" id="skinBtn" onclick="toggleSkinPanel()" title="Đổi bảng màu giao diện">🎨</button>
+      <div id="skinPanel" style="display:none;position:absolute;top:120%;right:0;z-index:50;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;gap:6px;box-shadow:0 8px 24px rgba(0,0,0,.25);white-space:nowrap;">
+        <button onclick="setSkin('aurora')" title="Aurora (mặc định)" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:linear-gradient(135deg,#4f6ef7,#7c3aed);cursor:pointer;margin:0 3px;"></button>
+        <button onclick="setSkin('sunset')" title="Sunset" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:linear-gradient(135deg,#f97316,#ec4899);cursor:pointer;margin:0 3px;"></button>
+        <button onclick="setSkin('ocean')" title="Ocean" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:linear-gradient(135deg,#06b6d4,#22c55e);cursor:pointer;margin:0 3px;"></button>
+        <button onclick="setSkin('mono')" title="Mono" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:linear-gradient(135deg,#64748b,#94a3b8);cursor:pointer;margin:0 3px;"></button>
+      </div>
+    </div>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Đổi giao diện sáng/tối">🌙</button>
     <div id="userBadge" style="display:none;align-items:center;gap:8px;font-size:12px;font-weight:600;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:6px 12px;">
       <span id="userBadgeText"></span>
@@ -1561,6 +1612,37 @@ function initTheme(){
 }
 
 // ============================================================
+// SKIN (bảng màu Liquid Glass) — Aurora / Sunset / Ocean / Mono
+// ============================================================
+const SKIN_LIST=['aurora','sunset','ocean','mono'];
+function setSkin(skin){
+  if(!SKIN_LIST.includes(skin))skin='aurora';
+  if(skin==='aurora')document.documentElement.removeAttribute('data-skin');
+  else document.documentElement.setAttribute('data-skin',skin);
+  try{localStorage.setItem('llv_skin',skin);}catch(e){}
+  document.querySelectorAll('#skinPanel button').forEach(b=>b.style.outline='none');
+  toggleSkinPanel(false);
+}
+function initSkin(){
+  let saved='aurora';
+  try{saved=localStorage.getItem('llv_skin')||'aurora';}catch(e){}
+  if(saved!=='aurora')document.documentElement.setAttribute('data-skin',saved);
+}
+function toggleSkinPanel(force){
+  const p=document.getElementById('skinPanel');
+  if(!p)return;
+  const show = force===undefined ? (p.style.display==='none'||!p.style.display) : force;
+  p.style.display = show ? 'flex' : 'none';
+}
+document.addEventListener('click',(e)=>{
+  const panel=document.getElementById('skinPanel');
+  const btn=document.getElementById('skinBtn');
+  if(panel && panel.style.display==='flex' && !panel.contains(e.target) && e.target!==btn){
+    panel.style.display='none';
+  }
+});
+
+// ============================================================
 // ĐĂNG NHẬP CÁ NHÂN — QUYỀN XEM LỊCH THEO VĂN PHÒNG / QUẢN LÝ
 // ============================================================
 // currentUser = {nv, boPhan, chucVu, isManager} sau khi đăng nhập thành công, null nếu chưa đăng nhập
@@ -1577,7 +1659,7 @@ function initAuth(){
     hideLoginGate();
     updateUserBadge();
     loadNewsFeed(); // đã đăng nhập sẵn -> tải ngay bảng tin (trang chủ)
-    // loadData() KHÔNG gọi ở đây — window.onload sẽ gọi 1 lần duy nhất sau khi DOM sẵn sàng
+    loadData();     // tải ngay lịch làm việc, không cần bấm nút thủ công
   }else{
     showLoginGate();
   }
@@ -1712,13 +1794,24 @@ document.addEventListener('keydown',(e)=>{
   }
 });
 
-// Giới hạn D+2: trả về true nếu ngày d bị khoá (chỉ cho NV thường, Quản lý luôn xem đủ)
-function isDateLocked(d){
+// isDateLocked: khoá ngày tương lai xa (> D+2) với NV thường
+// NGOẠI LỆ DUY NHẤT: ngày đó có dòng OFF (nghỉ phép đã duyệt) → hiện OFF, không lock
+// Ca thật tương lai (Ca Sáng/Tối/...) vẫn lock — NV không được xem lịch chưa công bố
+function isDateLocked(d, nvName){
   if(currentUser&&currentUser.isManager)return false;
   const today=new Date();today.setHours(0,0,0,0);
   const limit=addDays(today,2); // D+2
   const dd=new Date(d);dd.setHours(0,0,0,0);
-  return dd>limit;
+  if(dd<=limit)return false; // trong D+2 → không khoá
+  // Chỉ unlock nếu NV đó có dòng OFF đúng ngày này (nghỉ phép đã được duyệt)
+  if(nvName){
+    const ds=fmtDate(dd);
+    const hasOff=filteredData.some(r=>
+      r.nv===nvName && r.date && fmtDate(r.date)===ds && r.loaiCa==='OFF'
+    );
+    if(hasOff)return false;
+  }
+  return true;
 }
 
 const OFFICE_SHORT = {
@@ -1792,47 +1885,37 @@ function normalizeLoaiCa(loai,caLam){
 // ============================================================
 // LOAD TỪ APPS SCRIPT — JSONP (bypass CORS hoàn toàn)
 // ============================================================
-function fetchJSONP(url, timeoutMs){
-  timeoutMs = timeoutMs || 45000; // tăng lên 45s — Apps Script cold-start có thể mất 20-30s
+function fetchJSONP(url){
   return new Promise((resolve,reject)=>{
-    const cb='_cb'+Date.now()+'_'+Math.floor(Math.random()*10000);
+    const cb='_cb'+Date.now();
     const script=document.createElement('script');
     const timer=setTimeout(()=>{
       cleanup();
-      reject(new Error('Timeout — Apps Script chưa phản hồi sau '+Math.round(timeoutMs/1000)+'s'));
-    },timeoutMs);
+      reject(new Error('Timeout 20s — Kiểm tra lại URL hoặc quyền truy cập Apps Script'));
+    },20000);
     window[cb]=(data)=>{clearTimeout(timer);cleanup();resolve(data);};
     script.onerror=()=>{clearTimeout(timer);cleanup();reject(new Error('Không gọi được Apps Script. Kiểm tra URL và quyền "Anyone".'));};
-    function cleanup(){delete window[cb];try{if(script.parentNode)script.parentNode.removeChild(script);}catch(e){}}
-    script.src=url+(url.includes('?')?'&':'?')+'callback='+cb+'&_t='+Date.now();
+    function cleanup(){delete window[cb];if(document.body.contains(script))document.body.removeChild(script);}
+    script.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
     document.body.appendChild(script);
   });
 }
 
-// loadData có retry tự động: thử lần 1 → nếu fail thì đợi 10s → thử lần 2
-let _loadDataRunning=false;
-async function loadDataWithRetry(attempt){
-  attempt=attempt||1;
-  if(_loadDataRunning&&attempt===1)return; // tránh chạy song song
-  _loadDataRunning=true;
-
+async function loadData(){
+  // Ưu tiên đọc URL từ CONFIG (set cứng, luôn có sẵn) thay vì từ ô input
+  // để tránh race condition khi auto-load lúc trang mới mở
   const url=(
     (typeof CONFIG!=='undefined'&&CONFIG.webAppUrl)
     ? CONFIG.webAppUrl
     : (document.getElementById('webAppUrl').value||'').trim()
   );
-  if(!url){setStatus('⚠️ Chưa nhập Apps Script URL','warn');_loadDataRunning=false;return;}
+  if(!url){setStatus('⚠️ Chưa nhập Apps Script URL','warn');return;}
 
-  if(attempt===1){
-    showLoading('Đang kết nối Apps Script...');
-    document.getElementById('loadBtn').disabled=true;
-  }else{
-    showLoading('Kết nối lần '+attempt+'...');
-    setStatus('🔄 Đang thử lại lần '+attempt+'/3...','warn');
-  }
+  showLoading('Đang kết nối Apps Script...');
+  document.getElementById('loadBtn').disabled=true;
 
   try{
-    const json=await fetchJSONP(url, 45000);
+    const json=await fetchJSONP(url);
     if(json.status!=='ok')throw new Error(json.message||'Apps Script trả về lỗi');
 
     allData=json.data.map(r=>({
@@ -1853,26 +1936,16 @@ async function loadDataWithRetry(attempt){
     setStatus('✅ '+allData.length.toLocaleString()+' bản ghi · '+
       [...new Set(allData.map(r=>r.nv))].length+' nhân viên · '+
       [...new Set(allData.map(r=>r.thang).filter(Boolean))].length+' tháng','ok');
-    try{localStorage.setItem('llv_url',url);}catch(e){}
-    _loadDataRunning=false;
 
-  }catch(err){
-    if(attempt<3){
-      const wait=attempt*10; // lần 2 đợi 10s, lần 3 đợi 20s
-      setStatus('⚠️ Lần '+attempt+' thất bại — thử lại sau '+wait+'s... ('+err.message+')','warn');
-      setTimeout(()=>loadDataWithRetry(attempt+1), wait*1000);
-    }else{
-      setStatus('❌ Thất bại sau 3 lần thử — '+err.message,'err');
-      _loadDataRunning=false;
-    }
+    try{localStorage.setItem('llv_url',url);}catch(e){}
+
+  }catch(e){
+    setStatus('❌ '+e.message,'err');
   }
 
   hideLoading();
   document.getElementById('loadBtn').disabled=false;
 }
-
-// loadData = alias của loadDataWithRetry để nút "Đồng bộ" và các chỗ gọi cũ vẫn hoạt động
-function loadData(){ _loadDataRunning=false; loadDataWithRetry(1); }
 
 // ============================================================
 // DEMO DATA
@@ -1911,34 +1984,71 @@ function loadDemo(){
 // ============================================================
 function processData(){populateFilters();populateLoginNVSelect();applyFilters();}
 
-function populateFilters(){
+// Chuẩn hoá tên VP để so sánh không phân biệt hoa thường/khoảng trắng thừa
+function normVP(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
+
+// Apps Script B (loginSchedule) trả currentUser.boPhan = VP LỚN (HCM/Quảng Ngãi/Đà Lạt).
+// Mỗi dòng lịch (allData) có 2 tầng riêng: r.boPhan = VP NHỎ (Bà Điểm, Gò Dưa...),
+// r.vanPhong = VP LỚN. Hàm này suy map "VP nhỏ -> VP lớn" ngay từ allData để so sánh
+// đúng tầng ở mọi nơi cần lọc theo VP — tránh lặp lại logic rải rác dễ lệch bug.
+function buildOfficeToVPLonMap(){
+  const map={};
+  allData.forEach(r=>{
+    if(r.boPhan && r.vanPhong && !map[r.boPhan]) map[r.boPhan]=normVP(r.vanPhong);
+  });
+  return map;
+}
+
+// Trả về {isSuperManager, myVPNorm, officeToVPLon, allOffices, hasVanPhongData, visibleOffices}
+function getMyVPScope(){
+  const isSuperManager=currentUser&&currentUser.isSuperManager;
+  const myVP=currentUser?currentUser.boPhan:''; // = VP LỚN
+  const myVPNorm=normVP(myVP);
+  const officeToVPLon=buildOfficeToVPLonMap();
   const allOffices=[...new Set(allData.map(r=>r.boPhan).filter(o=>o&&o!=='OFF'))].sort();
+
+  // Kiểm tra cột vanPhong (VP lớn) trong allData có dữ liệu thật chưa —
+  // nếu Apps Script A chưa điền/đồng bộ đủ cột này thì KHÔNG được lọc,
+  // nếu không dropdown Văn phòng/Nhân viên sẽ trống trơn, NV không thao tác được.
+  const hasVanPhongData = allData.some(r => r.vanPhong && r.vanPhong.trim());
+
+  let visibleOffices;
+  if(isSuperManager || !myVPNorm || !hasVanPhongData){
+    visibleOffices = allOffices;
+  }else{
+    const filtered = allOffices.filter(o=>officeToVPLon[o]===myVPNorm);
+    // An toàn UI: nếu lọc theo VP ra rỗng (dữ liệu chưa khớp/đồng bộ đủ),
+    // KHÔNG để dropdown trống — tạm hiện hết, applyFilters() vẫn chặn đúng dữ liệu thật.
+    visibleOffices = filtered.length ? filtered : allOffices;
+  }
+  return {isSuperManager,myVPNorm,officeToVPLon,allOffices,hasVanPhongData,visibleOffices};
+}
+
+function populateFilters(){
   const allNvs=[...new Set(allData.map(r=>r.nv))].sort();
   const months=[...new Set(allData.map(r=>r.thang).filter(Boolean))].sort((a,b)=>a-b);
 
   // Xác định VP và NV được phép xem theo phân quyền
-  const isSuperManager=currentUser&&currentUser.isSuperManager;
-  const isManager=currentUser&&currentUser.isManager;
-  // vanPhong = VP lớn (HCM/Quảng Ngãi/Đà Lạt) — dùng phân quyền
-  // boPhan   = VP nhỏ (Bà Điểm/Gò Dưa/LHP...) — chỉ dùng hiển thị
-  const myVP=currentUser?(currentUser.vanPhong||currentUser.boPhan):'';
-  const normVP=(s)=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
-  const myVPNorm=normVP(myVP);
-  const hasVanPhongData=allData.some(r=>r.vanPhong&&r.vanPhong.trim());
+  const scope=getMyVPScope();
+  const isSuperManager=scope.isSuperManager;
+  const myVPNorm=scope.myVPNorm;
+  const officeToVPLon=scope.officeToVPLon;
+  const hasVanPhongData=scope.hasVanPhongData;
+  const visibleOffices=scope.visibleOffices;
 
-  // visibleOffices = VP nhỏ (boPhan) mà user được phép thấy
-  const visibleOffices=isSuperManager
-    ? allOffices
-    : myVPNorm && hasVanPhongData
-      ? [...new Set(allData.filter(r=>normVP(r.vanPhong)===myVPNorm).map(r=>r.boPhan).filter(o=>o&&o!=='OFF'))].sort()
-      : allOffices;
-
-  // visibleNvs = NV thuộc VP lớn của mình
-  const visibleNvs=isSuperManager
-    ? allNvs
-    : myVPNorm && hasVanPhongData
-      ? [...new Set(allData.filter(r=>normVP(r.vanPhong)===myVPNorm).map(r=>r.nv))].sort()
-      : allNvs;
+  // NV được hiện trong filter: chỉ NV thuộc VP được phép xem.
+  // Giống visibleOffices — nếu chưa có dữ liệu vanPhong hoặc lọc ra rỗng thì KHÔNG để trống,
+  // fallback về toàn bộ NV để dropdown vẫn chọn được (applyFilters() vẫn chặn đúng dữ liệu thật).
+  let visibleNvs;
+  if(isSuperManager || !myVPNorm || !hasVanPhongData){
+    visibleNvs = allNvs;
+  }else{
+    const filteredNvs=[...new Set(allData.filter(r=>{
+      const rvp=normVP(r.vanPhong)||officeToVPLon[r.boPhan]||'';
+      return !rvp||rvp===myVPNorm;
+    }).map(r=>r.nv))].sort();
+    visibleNvs = filteredNvs.length ? filteredNvs : allNvs;
+  }
 
   // Multi-select Văn phòng
   const officeItems=document.getElementById('officeMsItems');
@@ -1959,11 +2069,16 @@ function populateFilters(){
   updateNvLabel();
 
   const ms=document.getElementById('filterMonth');
+  const prevMonth=ms.value; // giữ tháng đang chọn nếu có
   ms.innerHTML='<option value="">Tất cả tháng</option>';
   months.forEach(m=>ms.innerHTML+=`<option value="${m}">Tháng ${m}</option>`);
-
-  const curM=new Date().getMonth()+1;
-  if(months.includes(curM))ms.value=curM;
+  // Khôi phục lựa chọn cũ nếu vẫn còn trong danh sách, không tự force tháng hiện tại
+  // (để NV xem được lịch tháng tương lai khi có OFF đã được duyệt)
+  if(prevMonth&&months.includes(parseInt(prevMonth))){
+    ms.value=prevMonth;
+  }else{
+    ms.value=''; // mặc định: Tất cả tháng
+  }
 }
 
 // ============================================================
@@ -2038,8 +2153,8 @@ function onOfficeCheck(cb){
   applyFilters();
 }
 function officeSelectAll(){
-  const all=[...new Set(allData.map(r=>r.boPhan).filter(o=>o&&o!=='OFF'))].sort();
-  selectedOffices=[...all];
+  const visibleOffices=getMyVPScope().visibleOffices;
+  selectedOffices=[...visibleOffices];
   document.querySelectorAll('#officeMsItems input').forEach(cb=>cb.checked=true);
   updateOfficeLabel();
   applyFilters();
@@ -2073,23 +2188,21 @@ function applyFilters(){
   const ca=document.getElementById('filterCa').value;
   const month=document.getElementById('filterMonth').value;
 
-  const isSuperManager=currentUser&&currentUser.isSuperManager;
-  // vanPhong = VP lớn (HCM/Quảng Ngãi/Đà Lạt) — dùng phân quyền lọc dữ liệu
-  // boPhan   = VP nhỏ (Bà Điểm/Gò Dưa/LHP...) — chỉ dùng hiển thị trên lịch
-  const myVP=currentUser?(currentUser.vanPhong||currentUser.boPhan):'';
-  const normVP=(s)=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
-  const myVPNorm=normVP(myVP);
-
-  // Chỉ bật filter phân quyền khi cột J (vanPhong) đã có dữ liệu trong sheet
-  const hasVanPhongData=allData.some(r=>r.vanPhong&&r.vanPhong.trim());
+  const scope=getMyVPScope();
+  const isSuperManager=scope.isSuperManager;
+  const myVPNorm=scope.myVPNorm;
+  const officeToVPLon=scope.officeToVPLon;
+  const hasVanPhongData=scope.hasVanPhongData;
 
   filteredData=allData.filter(r=>{
     // Giới hạn theo phân quyền VP — tầng bảo vệ chính
+    // squanly: xem tất cả | quanly + nhanvien: chỉ VP mình
     if(!isSuperManager && myVPNorm && hasVanPhongData){
-      const rvp=normVP(r.vanPhong);
-      // Lọc chặt: dòng có vanPhong khác VP mình → loại
-      // dòng không có vanPhong (rvp="") → cũng loại để tránh lọt
-      if(rvp !== myVPNorm) return false;
+      // Chỉ lọc theo VP khi đã có dữ liệu vanPhong trong cột J.
+      // Nếu dòng thiếu vanPhong, suy ra qua map boPhan->vanPhong thay vì bỏ qua filter
+      // (bỏ qua filter khi thiếu dữ liệu là kẽ hở lộ dữ liệu VP khác).
+      const rvp = normVP(r.vanPhong) || officeToVPLon[r.boPhan] || '';
+      if(rvp && rvp !== myVPNorm) return false;
     }
     // Filter tuỳ chọn (multi-select VP/NV — trong phạm vi được phép)
     if(selectedOffices.length>0&&!selectedOffices.includes(r.boPhan))return false;
@@ -2161,7 +2274,11 @@ function renderWeekView(days,weekRows){
 
   head.innerHTML=`<tr><th>Nhân viên</th>${days.map((d,i)=>`<th class="day-col"><div class="day-header">${thu[i]}</div><div class="day-date">${fmtDisp(d)}</div></th>`).join('')}</tr>`;
 
-  const nvs=[...new Set(weekRows.map(r=>r.nv))].sort();
+  const allNvsInWeek=[...new Set(weekRows.map(r=>r.nv))].sort();
+  // NV thường chỉ thấy lịch của chính mình — Quản lý thấy tất cả
+  const isMgr=currentUser&&currentUser.isManager;
+  const myNv=currentUser?currentUser.nv:'';
+  const nvs=isMgr ? allNvsInWeek : allNvsInWeek.filter(n=>n===myNv);
   if(!nvs.length){body.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
 
@@ -2173,7 +2290,7 @@ function renderWeekView(days,weekRows){
     const cells=days.map(d=>{
       const isToday=fmtDate(d)===today;
       const bg=isToday?'background:rgba(79,110,247,.08);':'';
-      const locked=isDateLocked(d);
+      const locked=isDateLocked(d, nv);
       if(locked){
         return`<td style="${bg}" class="locked-td">
           <div class="locked-cell">
@@ -2263,7 +2380,7 @@ function renderShiftView(weekDays,weekRowsFull){
     const cells=days.map(d=>{
       const isToday=fmtDate(d)===today;
       const bg=isToday?'background:rgba(79,110,247,.08);':'';
-      const locked=isDateLocked(d);
+      const locked=isDateLocked(d, null); // ShiftView không theo từng NV, dùng null → chỉ lock khi không có data gì
       if(locked){
         return`<td style="${bg}" class="locked-td">
           <div class="locked-cell"><span class="ca-badge ca-off">···</span></div>
@@ -2338,7 +2455,10 @@ function renderMonthView(){
   const month=parseInt(document.getElementById('filterMonth').value)||(new Date().getMonth()+1);
   const daysInMonth=new Date(2025,month,0).getDate();
   const monthR=filteredData.filter(r=>r.thang===month);
-  const nvs=[...new Set(monthR.map(r=>r.nv))].sort();
+  const allNvsInMonth=[...new Set(monthR.map(r=>r.nv))].sort();
+  const isMgrM=currentUser&&currentUser.isManager;
+  const myNvM=currentUser?currentUser.nv:'';
+  const nvs=isMgrM ? allNvsInMonth : allNvsInMonth.filter(n=>n===myNvM);
   const dayNums=Array.from({length:daysInMonth},(_,i)=>i+1);
   const head=document.getElementById('scheduleHead');
   const body=document.getElementById('scheduleBody');
@@ -2355,7 +2475,7 @@ function renderMonthView(){
     const cells=dayNums.map(d=>{
       const yearForLock=allData.find(r=>r.thang===month)?.date?.getFullYear()||new Date().getFullYear();
       const cellDateReal=new Date(yearForLock, month-1, d, 12,0,0);
-      const locked=isDateLocked(cellDateReal);
+      const locked=isDateLocked(cellDateReal, nv);
       const r=lk[nv+'|'+d];
       const bg=d===todayD?'background:rgba(79,110,247,.1);':'';
       if(locked){
@@ -3835,13 +3955,19 @@ async function submitNghiPhepLogin(){
 
   showLoading('Đang xác thực...');
   try{
-    const url=CONFIG.payrollUrl+'?action=checkPasscode&nv='+encodeURIComponent(nv)+'&passcode='+encodeURIComponent(passcode);
-    const json=await fetchJSONP(url);
-    if(json.status!=='ok'||!json.data||!json.data.valid)throw new Error('Passcode không đúng.');
+    // Dùng loginSchedule thay checkPasscode để lấy vanPhong + chucVu ngay khi đăng nhập
+    // → nghiPhepVanPhong có giá trị đúng trước khi checkNghiPhepQuota chạy
+    const url=CONFIG.payrollUrl+'?action=loginSchedule&nv='+encodeURIComponent(nv)+'&passcode='+encodeURIComponent(passcode);
+    const json=await fetchJSONP(url,45000);
+    if(json.status!=='ok'||!json.data)throw new Error('Passcode không đúng.');
 
     nghiPhepUser={nv:nv,passcode:passcode};
+    // Lấy vanPhong từ loginSchedule — đây là VP lớn (HCM/Quảng Ngãi/Đà Lạt)
+    nghiPhepVanPhong=json.data.vanPhong||json.data.boPhan||'';
+    nghiPhepIsManager=json.data.isManager||false;
+    document.getElementById('nghiPhepTabDuyet').style.display=nghiPhepIsManager?'block':'none';
 
-    // Ngày mặc định = ngày mai (nghỉ từ hôm nay trở đi)
+    // Ngày mặc định = ngày mai
     document.getElementById('nghiPhepFormNgay').value=fmtDate(addDays(new Date(),1));
     document.getElementById('nghiPhepQuotaBox').style.display='none';
     document.getElementById('nghiPhepFormLyDo').value='';
@@ -3880,56 +4006,67 @@ async function checkNghiPhepQuota(){
   box.style.display='flex';
   box.className='nghiphep-quota-box';
   box.textContent='Đang kiểm tra số lượng đã đăng ký...';
+  document.getElementById('nghiPhepSubmitBtn').disabled=true;
 
   try{
-    const url=CONFIG.payrollUrl+'?action=getNghiPhepList&nv='+encodeURIComponent(nghiPhepUser.nv)+'&passcode='+encodeURIComponent(nghiPhepUser.passcode);
-    const json=await fetchJSONP(url);
+    // Gọi action demOffTheoNgayVP — trả về số đơn cùng ngày cùng VP lớn
+    // Cho phép NV thường gọi, không cần quyền quản lý
+    const url=CONFIG.payrollUrl
+      +'?action=demOffTheoNgayVP'
+      +'&nv='+encodeURIComponent(nghiPhepUser.nv)
+      +'&passcode='+encodeURIComponent(nghiPhepUser.passcode)
+      +'&ngay='+encodeURIComponent(ngay);
+    const json=await fetchJSONP(url, 45000);
     if(json.status!=='ok')throw new Error(json.message);
-    nghiPhepIsManager=json.data.isManager;
-    nghiPhepVanPhong=json.data.vanPhong;
-    document.getElementById('nghiPhepTabDuyet').style.display=nghiPhepIsManager?'block':'none';
 
-    const configUrl=CONFIG.payrollUrl+'?action=getGioiHanOffConfig';
-    const configJson=await fetchJSONP(configUrl);
-    const gioiHan=(configJson.status==='ok'&&configJson.data[nghiPhepVanPhong]!==undefined)?configJson.data[nghiPhepVanPhong]:2;
+    const d=json.data;
+    // Cập nhật vanPhong từ backend (nguồn chính xác nhất)
+    if(d.vanPhong) nghiPhepVanPhong=d.vanPhong;
 
-    // Đếm số đơn (Chờ duyệt + Đã duyệt) trùng ngày, cùng văn phòng — lấy từ list đầy đủ của Quản lý nếu có quyền,
-    // nếu không thì chỉ ước lượng được dựa trên đơn của chính mình (chặn thật vẫn do backend xử lý khi Gửi)
-    let soLuong=0;
-    if(nghiPhepIsManager){
-      const allUrl=CONFIG.payrollUrl+'?action=getNghiPhepList&nv='+encodeURIComponent(nghiPhepUser.nv)+'&passcode='+encodeURIComponent(nghiPhepUser.passcode);
-      const allJson=await fetchJSONP(allUrl);
-      if(allJson.status==='ok'){
-        soLuong=allJson.data.rows.filter(r=>r.ngayNghi===ngay&&r.vanPhong===nghiPhepVanPhong&&r.trangThai!=='Từ chối').length;
-      }
-    }else{
-      soLuong=null; // NV thường không xem được đơn của người khác -> không ước lượng trước, chỉ biết khi Gửi
-    }
-
-    if(soLuong===null){
-      box.textContent='ℹ️ Văn phòng "'+nghiPhepVanPhong+'" cho phép tối đa '+gioiHan+' người nghỉ/ngày. Hệ thống sẽ tự kiểm tra khi bạn gửi đăng ký.';
-    }else if(soLuong>=gioiHan){
+    if(d.daDangKy){
       box.className='nghiphep-quota-box full';
-      box.textContent='⛔ Ngày này đã đủ '+soLuong+'/'+gioiHan+' người đăng ký tại văn phòng "'+nghiPhepVanPhong+'". Vui lòng chọn ngày khác.';
-    }else if(soLuong===gioiHan-1){
+      box.textContent='⛔ Bạn đã có đơn đăng ký nghỉ ngày này rồi. Vui lòng chọn ngày khác.';
+      document.getElementById('nghiPhepSubmitBtn').disabled=true;
+    }else if(!d.conCho){
+      box.className='nghiphep-quota-box full';
+      box.textContent='⛔ Ngày này đã đủ '+d.soLuong+'/'+d.gioiHan+' người tại VP "'+d.vanPhong+'". Vui lòng chọn ngày khác.';
+      document.getElementById('nghiPhepSubmitBtn').disabled=true;
+    }else if(d.soLuong===d.gioiHan-1){
       box.className='nghiphep-quota-box warn';
-      box.textContent='⚠️ Còn 1 chỗ cuối: '+soLuong+'/'+gioiHan+' người đã đăng ký tại văn phòng "'+nghiPhepVanPhong+'".';
+      box.textContent='⚠️ Còn 1 chỗ cuối: '+d.soLuong+'/'+d.gioiHan+' người đã đăng ký tại VP "'+d.vanPhong+'".';
+      document.getElementById('nghiPhepSubmitBtn').disabled=false;
     }else{
-      box.textContent='✅ '+soLuong+'/'+gioiHan+' người đã đăng ký tại văn phòng "'+nghiPhepVanPhong+'". Vẫn còn chỗ.';
+      box.textContent='✅ '+d.soLuong+'/'+d.gioiHan+' người đã đăng ký tại VP "'+d.vanPhong+'". Vẫn còn chỗ.';
+      document.getElementById('nghiPhepSubmitBtn').disabled=false;
     }
   }catch(e){
-    box.textContent='Không kiểm tra được trước — hệ thống vẫn sẽ tự chặn khi bạn gửi nếu đã đủ chỗ.';
+    box.textContent='⚠️ Không kiểm tra được — hệ thống sẽ tự chặn khi bạn gửi nếu đã đủ chỗ.';
+    document.getElementById('nghiPhepSubmitBtn').disabled=false;
   }
 }
+
 
 async function submitNghiPhepForm(){
   const msg=document.getElementById('nghiPhepFormMsg');
   msg.style.display='none';
-  if(!nghiPhepUser){msg.textContent='❌ Phiên đăng nhập đã hết, vui lòng mở lại.';msg.className='nghiphep-msg error';return;}
+  if(!nghiPhepUser){msg.textContent='❌ Phiên đăng nhập đã hết, vui lòng mở lại.';msg.className='nghiphep-msg error';msg.style.display='block';return;}
 
   const ngay=document.getElementById('nghiPhepFormNgay').value;
   const lyDo=document.getElementById('nghiPhepFormLyDo').value.trim();
-  if(!ngay){msg.textContent='❌ Vui lòng chọn ngày muốn nghỉ.';msg.className='nghiphep-msg error';return;}
+  if(!ngay){msg.textContent='❌ Vui lòng chọn ngày muốn nghỉ.';msg.className='nghiphep-msg error';msg.style.display='block';return;}
+
+  // Kiểm tra trùng đơn phía frontend trước khi gửi (tầng bảo vệ bổ sung)
+  if(nghiPhepLastList&&nghiPhepLastList.rows){
+    const trung=nghiPhepLastList.rows.some(r=>
+      r.ngayNghi===ngay && r.nv===nghiPhepUser.nv && r.trangThai!=='Từ chối'
+    );
+    if(trung){
+      msg.textContent='❌ Bạn đã có đơn đăng ký nghỉ ngày này rồi. Vui lòng chọn ngày khác.';
+      msg.className='nghiphep-msg error';
+      msg.style.display='block';
+      return;
+    }
+  }
 
   const btn=document.getElementById('nghiPhepSubmitBtn');
   btn.disabled=true;btn.textContent='Đang gửi...';
@@ -3937,17 +4074,20 @@ async function submitNghiPhepForm(){
   try{
     const payload={nv:nghiPhepUser.nv,passcode:nghiPhepUser.passcode,ngayNghi:ngay,lyDo:lyDo};
     const url=CONFIG.payrollUrl+'?action=submitNghiPhep&payload='+encodeURIComponent(JSON.stringify(payload));
-    const json=await fetchJSONP(url);
+    const json=await fetchJSONP(url, 45000);
     if(json.status!=='ok')throw new Error(json.message||'Đăng ký thất bại');
 
     msg.textContent='✅ '+json.message;
     msg.className='nghiphep-msg success';
+    msg.style.display='block';
     document.getElementById('nghiPhepFormLyDo').value='';
+    document.getElementById('nghiPhepFormNgay').value='';
     document.getElementById('nghiPhepQuotaBox').style.display='none';
-    nghiPhepLastList=null; // invalidate cache
+    nghiPhepLastList=null; // invalidate cache để load lại
   }catch(e){
-    msg.textContent='❌ '+e.message; // message từ backend đã có sẵn lời giải thích chi tiết khi bị chặn do trùng/đủ chỗ
+    msg.textContent='❌ '+e.message;
     msg.className='nghiphep-msg error';
+    msg.style.display='block';
   }
   btn.disabled=false;btn.textContent='Gửi đăng ký';
 }
@@ -4330,11 +4470,12 @@ document.addEventListener('keydown',(e)=>{
 // ============================================================
 window.addEventListener('load',()=>{
   initTheme();
-  initAuth(); // initAuth KHÔNG gọi loadData nữa
+  initSkin();
+  initAuth();
+  // Luôn dùng URL cố định từ CONFIG
   const url = (typeof CONFIG!=='undefined'&&CONFIG.webAppUrl) ? CONFIG.webAppUrl : '';
   if(url) {
     document.getElementById('webAppUrl').value=url;
-    // Gọi loadData 1 lần duy nhất — có retry tự động nếu Apps Script cold-start
     loadData();
   }
   updateWeekLabel();
