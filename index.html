@@ -37,7 +37,7 @@
   })();
 </script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
   :root {
     --bg:#0d0f14; --surface:#171a22; --surface2:#1e222d; --border:#2a2f3d;
     --accent:#3355d8; --accent2:#0ea5a0;
@@ -212,8 +212,8 @@
   }
   .header-left{display:flex;align-items:center;gap:12px;}
   .logo{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
-  .htitle{font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;}
-  .hsub{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.8px;}
+  .htitle{font-size:15px;font-weight:600;letter-spacing:-.2px;}
+  .hsub{font-size:11px;color:var(--text3);margin-top:1px;}
   .sync-btn{
     display:flex;align-items:center;gap:7px;
     background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur-light));-webkit-backdrop-filter:blur(var(--glass-blur-light));
@@ -228,6 +228,19 @@
     border-radius:10px;color:var(--text);font-size:16px;cursor:pointer;transition:all .2s;
   }
   .theme-btn:hover{background:var(--accent);border-color:var(--accent);}
+  .header-right{display:flex;align-items:center;gap:16px;}
+  .header-group{display:flex;align-items:center;gap:8px;}
+  .header-divider{width:1px;align-self:stretch;background:var(--glass-border);margin:2px 0;}
+  .last-sync-text{font-size:11px;color:var(--text3);white-space:nowrap;}
+  .sync-btn{height:38px;box-sizing:border-box;}
+  .user-badge{
+    display:none;align-items:center;gap:8px;font-size:12px;font-weight:600;height:38px;box-sizing:border-box;
+    background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur-light));-webkit-backdrop-filter:blur(var(--glass-blur-light));
+    border:1px solid var(--glass-border);box-shadow:0 2px 10px var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+    border-radius:20px;padding:0 12px;color:var(--text);
+  }
+  .user-badge-close{cursor:pointer;color:var(--text3);}
+  .user-badge-close:hover{color:var(--red);}
   /* ===== Panel chọn bảng màu giao diện — thay cho 7 chấm tròn không tên trước đây ===== */
   .skin-panel{
     display:none;position:absolute;top:120%;right:0;z-index:50;
@@ -294,7 +307,9 @@
     font-family:'JetBrains Mono',monospace;letter-spacing:.6px;
   }
   .modal-sub{font-size:12px;color:var(--text3);margin-bottom:16px;}
-  .modal-box input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;color:var(--text);font-size:16px;text-align:center;letter-spacing:4px;font-family:'Inter',sans-serif;outline:none;margin-bottom:12px;}
+  .modal-box input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;color:var(--text);font-size:14px;text-align:left;font-family:'Inter',sans-serif;outline:none;margin-bottom:12px;}
+  /* Chỉ ô Passcode 6 số (maxlength=6) mới căn giữa + giãn chữ — KHÔNG áp cho ô ngày/SĐT/tìm kiếm */
+  .modal-box input[maxlength="6"]{font-size:16px;text-align:center;letter-spacing:4px;}
   .modal-box input:focus{border-color:var(--accent);}
   .modal-actions{display:flex;gap:8px;}
   .modal-actions button{flex:1;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
@@ -980,57 +995,62 @@
       <div class="hsub">Vận tải hành khách & hàng hoá · HCM – QN · HCM – ĐL</div>
     </div>
   </div>
-  <div style="display:flex;gap:10px;align-items:center;">
-    <div id="lastSync" style="font-size:11px;color:var(--text3);">Chưa đồng bộ</div>
-    <button class="sync-btn" onclick="loadData()">
-      <div class="sync-dot"></div>
-      <span>Đồng bộ</span>
-    </button>
-    <div style="position:relative;">
-      <button class="theme-btn" id="skinBtn" onclick="toggleSkinPanel()" title="Đổi bảng màu giao diện">🎨</button>
-      <div id="skinPanel" class="skin-panel">
-        <div class="skin-panel-title">Bảng màu giao diện</div>
-        <button class="skin-option" data-skin="aurora" onclick="setSkin('aurora')">
-          <span class="skin-swatch" style="background:linear-gradient(135deg,#3355d8,#0ea5a0)"></span>
-          <span class="skin-name">Aurora <em>mặc định</em></span>
-          <span class="skin-check">✓</span>
-        </button>
-        <button class="skin-option" data-skin="sunset" onclick="setSkin('sunset')">
-          <span class="skin-swatch" style="background:linear-gradient(135deg,#f97316,#ec4899)"></span>
-          <span class="skin-name">Hoàng hôn</span>
-          <span class="skin-check">✓</span>
-        </button>
-        <button class="skin-option" data-skin="ocean" onclick="setSkin('ocean')">
-          <span class="skin-swatch" style="background:linear-gradient(135deg,#06b6d4,#22c55e)"></span>
-          <span class="skin-name">Đại dương</span>
-          <span class="skin-check">✓</span>
-        </button>
-        <button class="skin-option" data-skin="forest" onclick="setSkin('forest')">
-          <span class="skin-swatch" style="background:linear-gradient(135deg,#16a34a,#84cc16)"></span>
-          <span class="skin-name">Rừng xanh</span>
-          <span class="skin-check">✓</span>
-        </button>
-        <button class="skin-option" data-skin="candy" onclick="setSkin('candy')">
-          <span class="skin-swatch" style="background:linear-gradient(135deg,#ec4899,#a78bfa)"></span>
-          <span class="skin-name">Kẹo ngọt</span>
-          <span class="skin-check">✓</span>
-        </button>
-        <button class="skin-option" data-skin="neon" onclick="setSkin('neon')">
-          <span class="skin-swatch" style="background:linear-gradient(135deg,#22d3ee,#d946ef)"></span>
-          <span class="skin-name">Neon</span>
-          <span class="skin-check">✓</span>
-        </button>
-        <button class="skin-option" data-skin="mono" onclick="setSkin('mono')">
-          <span class="skin-swatch" style="background:linear-gradient(135deg,#64748b,#94a3b8)"></span>
-          <span class="skin-name">Đơn sắc</span>
-          <span class="skin-check">✓</span>
-        </button>
-      </div>
+  <div class="header-right">
+    <div class="header-group">
+      <div id="lastSync" class="last-sync-text">Chưa đồng bộ</div>
+      <button class="sync-btn" onclick="loadData()">
+        <div class="sync-dot"></div>
+        <span>Đồng bộ</span>
+      </button>
     </div>
-    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Đổi giao diện sáng/tối">🌙</button>
-    <div id="userBadge" style="display:none;align-items:center;gap:8px;font-size:12px;font-weight:600;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:6px 12px;">
+    <div class="header-divider"></div>
+    <div class="header-group">
+      <div style="position:relative;">
+        <button class="theme-btn" id="skinBtn" onclick="toggleSkinPanel()" title="Đổi bảng màu giao diện">🎨</button>
+        <div id="skinPanel" class="skin-panel">
+          <div class="skin-panel-title">Bảng màu giao diện</div>
+          <button class="skin-option" data-skin="aurora" onclick="setSkin('aurora')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#3355d8,#0ea5a0)"></span>
+            <span class="skin-name">Aurora <em>mặc định</em></span>
+            <span class="skin-check">✓</span>
+          </button>
+          <button class="skin-option" data-skin="sunset" onclick="setSkin('sunset')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#f97316,#ec4899)"></span>
+            <span class="skin-name">Hoàng hôn</span>
+            <span class="skin-check">✓</span>
+          </button>
+          <button class="skin-option" data-skin="ocean" onclick="setSkin('ocean')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#06b6d4,#22c55e)"></span>
+            <span class="skin-name">Đại dương</span>
+            <span class="skin-check">✓</span>
+          </button>
+          <button class="skin-option" data-skin="forest" onclick="setSkin('forest')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#16a34a,#84cc16)"></span>
+            <span class="skin-name">Rừng xanh</span>
+            <span class="skin-check">✓</span>
+          </button>
+          <button class="skin-option" data-skin="candy" onclick="setSkin('candy')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#ec4899,#a78bfa)"></span>
+            <span class="skin-name">Kẹo ngọt</span>
+            <span class="skin-check">✓</span>
+          </button>
+          <button class="skin-option" data-skin="neon" onclick="setSkin('neon')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#22d3ee,#d946ef)"></span>
+            <span class="skin-name">Neon</span>
+            <span class="skin-check">✓</span>
+          </button>
+          <button class="skin-option" data-skin="mono" onclick="setSkin('mono')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#64748b,#94a3b8)"></span>
+            <span class="skin-name">Đơn sắc</span>
+            <span class="skin-check">✓</span>
+          </button>
+        </div>
+      </div>
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Đổi giao diện sáng/tối">🌙</button>
+    </div>
+    <div id="userBadge" class="user-badge">
       <span id="userBadgeText"></span>
-      <span style="cursor:pointer;color:var(--text3);" onclick="logoutSchedule()" title="Đăng xuất">✕</span>
+      <span class="user-badge-close" onclick="logoutSchedule()" title="Đăng xuất">✕</span>
     </div>
   </div>
 </div>
