@@ -28,7 +28,11 @@
   (function(){
     try{
       const t=localStorage.getItem('llv_theme');
-      if(t==='light')document.documentElement.setAttribute('data-theme','light');
+      let resolved=t;
+      if(t==='auto'){
+        resolved=(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';
+      }
+      if(resolved==='light'||resolved==='sepia')document.documentElement.setAttribute('data-theme',resolved);
     }catch(e){}
     try{
       const s=localStorage.getItem('llv_skin');
@@ -147,6 +151,69 @@
     --glass-bg-orb1: rgba(34,211,238,0.20);
     --glass-bg-orb2: rgba(217,70,239,0.16);
     --glass-bg-orb3: rgba(163,230,53,0.14);
+  }
+  [data-skin="ruby"] {
+    --accent:#dc2626; --accent2:#f43f5e;
+    --glass-bg-orb1: rgba(220,38,38,0.55);
+    --glass-bg-orb2: rgba(244,63,94,0.40);
+    --glass-bg-orb3: rgba(251,113,133,0.28);
+  }
+  [data-theme="light"][data-skin="ruby"] {
+    --glass-bg-orb1: rgba(220,38,38,0.16);
+    --glass-bg-orb2: rgba(244,63,94,0.13);
+    --glass-bg-orb3: rgba(251,113,133,0.11);
+  }
+  [data-skin="gold"] {
+    --accent:#d97706; --accent2:#eab308;
+    --ca-sang:#0f9d6e; --ca-toi:#eab308; --ca-lo:#3b82f6; --truc-dem:#8b5cf6;
+    --glass-bg-orb1: rgba(217,119,6,0.50);
+    --glass-bg-orb2: rgba(234,179,8,0.40);
+    --glass-bg-orb3: rgba(252,211,77,0.28);
+  }
+  [data-theme="light"][data-skin="gold"] {
+    --glass-bg-orb1: rgba(217,119,6,0.16);
+    --glass-bg-orb2: rgba(234,179,8,0.13);
+    --glass-bg-orb3: rgba(252,211,77,0.11);
+  }
+  [data-skin="sky"] {
+    --accent:#0ea5e9; --accent2:#38bdf8;
+    --glass-bg-orb1: rgba(14,165,233,0.50);
+    --glass-bg-orb2: rgba(56,189,248,0.38);
+    --glass-bg-orb3: rgba(125,211,252,0.26);
+  }
+  [data-theme="light"][data-skin="sky"] {
+    --glass-bg-orb1: rgba(14,165,233,0.16);
+    --glass-bg-orb2: rgba(56,189,248,0.13);
+    --glass-bg-orb3: rgba(125,211,252,0.11);
+  }
+  [data-skin="graphite"] {
+    --accent:#334155; --accent2:#64748b;
+    --glass-bg-orb1: rgba(51,65,85,0.45);
+    --glass-bg-orb2: rgba(100,116,139,0.35);
+    --glass-bg-orb3: rgba(148,163,184,0.22);
+  }
+  [data-theme="light"][data-skin="graphite"] {
+    --glass-bg-orb1: rgba(51,65,85,0.12);
+    --glass-bg-orb2: rgba(100,116,139,0.10);
+    --glass-bg-orb3: rgba(148,163,184,0.09);
+  }
+  /* ===== CHẾ ĐỘ SÁNG/TỐI MỞ RỘNG — thêm "Dịu mắt" (ấm, giảm chói ban đêm) ===== */
+  [data-theme="sepia"] {
+    --bg:#1b140d; --surface:#261c12; --surface2:#302418; --border:#42311f;
+    --accent:#d9a441; --accent2:#c2703a;
+    --green:#8fae5a; --amber:#d9a441; --red:#c85c4a; --purple:#a8825a; --blue:#c2703a;
+    --text:#ecdcc4; --text2:#b8a180; --text3:#84714f;
+    --ca-sang:#8fae5a; --ca-toi:#d9a441; --ca-lo:#c2703a; --truc-dem:#a8825a; --off:#6b5c42;
+    --glass-bg: rgba(217,164,65,0.06);
+    --glass-bg-strong: rgba(217,164,65,0.10);
+    --glass-border: rgba(217,164,65,0.16);
+    --glass-highlight: rgba(236,220,196,0.22);
+    --glass-shadow: rgba(0,0,0,0.5);
+    --glass-blur: 22px;
+    --glass-blur-light: 14px;
+    --glass-bg-orb1: rgba(217,164,65,0.35);
+    --glass-bg-orb2: rgba(194,112,58,0.28);
+    --glass-bg-orb3: rgba(143,174,90,0.18);
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   html{font-size:14px;}
@@ -1044,9 +1111,54 @@
             <span class="skin-name">Đơn sắc</span>
             <span class="skin-check">✓</span>
           </button>
+          <button class="skin-option" data-skin="ruby" onclick="setSkin('ruby')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#dc2626,#f43f5e)"></span>
+            <span class="skin-name">Ruby</span>
+            <span class="skin-check">✓</span>
+          </button>
+          <button class="skin-option" data-skin="gold" onclick="setSkin('gold')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#d97706,#eab308)"></span>
+            <span class="skin-name">Vàng đồng</span>
+            <span class="skin-check">✓</span>
+          </button>
+          <button class="skin-option" data-skin="sky" onclick="setSkin('sky')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8)"></span>
+            <span class="skin-name">Xanh trời</span>
+            <span class="skin-check">✓</span>
+          </button>
+          <button class="skin-option" data-skin="graphite" onclick="setSkin('graphite')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#334155,#64748b)"></span>
+            <span class="skin-name">Than chì</span>
+            <span class="skin-check">✓</span>
+          </button>
         </div>
       </div>
-      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Đổi giao diện sáng/tối">🌙</button>
+      <div style="position:relative;">
+        <button class="theme-btn" id="themeBtn" onclick="toggleThemePanel()" title="Đổi chế độ sáng/tối">🌙</button>
+        <div id="themePanel" class="skin-panel">
+          <div class="skin-panel-title">Chế độ hiển thị</div>
+          <button class="theme-option skin-option" data-theme-opt="dark" onclick="setTheme('dark')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#0d0f14,#171a22)"></span>
+            <span class="skin-name">Tối <em>mặc định</em></span>
+            <span class="skin-check">✓</span>
+          </button>
+          <button class="theme-option skin-option" data-theme-opt="light" onclick="setTheme('light')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#f3f4f8,#ffffff)"></span>
+            <span class="skin-name">Sáng</span>
+            <span class="skin-check">✓</span>
+          </button>
+          <button class="theme-option skin-option" data-theme-opt="sepia" onclick="setTheme('sepia')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#1b140d,#d9a441)"></span>
+            <span class="skin-name">Dịu mắt <em>ấm, ban đêm</em></span>
+            <span class="skin-check">✓</span>
+          </button>
+          <button class="theme-option skin-option" data-theme-opt="auto" onclick="setTheme('auto')">
+            <span class="skin-swatch" style="background:linear-gradient(135deg,#171a22,#f3f4f8)"></span>
+            <span class="skin-name">Tự động <em>theo máy</em></span>
+            <span class="skin-check">✓</span>
+          </button>
+        </div>
+      </div>
     </div>
     <div id="userBadge" class="user-badge">
       <span id="userBadgeText"></span>
@@ -2454,30 +2566,63 @@ let selectedOffices = []; // [] = tất cả văn phòng
 // ============================================================
 // THEME (sáng/tối)
 // ============================================================
+const THEME_LIST=['dark','light','sepia','auto'];
+const THEME_ICON={dark:'🌙',light:'☀️',sepia:'📜',auto:'🔄'};
+function systemPrefersLight(){
+  try{return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;}catch(e){return false;}
+}
 function applyTheme(theme){
-  if(theme==='light'){
-    document.documentElement.setAttribute('data-theme','light');
-    document.getElementById('themeBtn').textContent='☀️';
+  if(!THEME_LIST.includes(theme))theme='dark';
+  const resolved = theme==='auto' ? (systemPrefersLight()?'light':'dark') : theme;
+  if(resolved==='light'||resolved==='sepia'){
+    document.documentElement.setAttribute('data-theme',resolved);
   }else{
     document.documentElement.removeAttribute('data-theme');
-    document.getElementById('themeBtn').textContent='🌙';
   }
+  const btn=document.getElementById('themeBtn');
+  if(btn)btn.textContent=THEME_ICON[theme]||'🌙';
   try{localStorage.setItem('llv_theme',theme);}catch(e){}
+  markSelectedTheme(theme);
 }
-function toggleTheme(){
-  const cur=document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';
-  applyTheme(cur==='light'?'dark':'light');
+function setTheme(theme){
+  applyTheme(theme);
+  toggleThemePanel(false);
+}
+function markSelectedTheme(theme){
+  document.querySelectorAll('.theme-option').forEach(b=>{
+    b.classList.toggle('selected', b.getAttribute('data-theme-opt')===theme);
+  });
+}
+function toggleThemePanel(force){
+  const p=document.getElementById('themePanel');
+  if(!p)return;
+  const show = force===undefined ? !p.classList.contains('show') : force;
+  p.classList.toggle('show', show);
 }
 function initTheme(){
   let saved='dark';
   try{saved=localStorage.getItem('llv_theme')||'dark';}catch(e){}
   applyTheme(saved);
+  try{
+    window.matchMedia('(prefers-color-scheme: light)').addEventListener('change',()=>{
+      let cur='dark';
+      try{cur=localStorage.getItem('llv_theme')||'dark';}catch(e){}
+      if(cur==='auto')applyTheme('auto');
+    });
+  }catch(e){}
 }
+document.addEventListener('click',(e)=>{
+  const panel=document.getElementById('themePanel');
+  const btn=document.getElementById('themeBtn');
+  if(panel && panel.classList.contains('show') && !panel.contains(e.target) && e.target!==btn){
+    panel.classList.remove('show');
+  }
+});
 
 // ============================================================
 // SKIN (bảng màu Liquid Glass) — Aurora / Sunset / Ocean / Mono
 // ============================================================
-const SKIN_LIST=['aurora','sunset','ocean','mono','candy','forest','neon'];
+const SKIN_LIST=['aurora','sunset','ocean','mono','candy','forest','neon','ruby','gold','sky','graphite'];
 function markSelectedSkin(skin){
   document.querySelectorAll('.skin-option').forEach(b=>{
     b.classList.toggle('selected', b.getAttribute('data-skin')===skin);
