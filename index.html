@@ -1044,7 +1044,7 @@
   .nv-picker-ten::placeholder{color:var(--text3);}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -1300,6 +1300,7 @@
         <div class="thuchi-tab active" id="thuChiTabNhap" onclick="switchThuChiTab('nhap')">➕ Nhập giao dịch</div>
         <div class="thuchi-tab" id="thuChiTabBaoCao" onclick="switchThuChiTab('baocao')">📊 Báo cáo</div>
         <div class="thuchi-tab" id="thuChiTabKiemSoat" onclick="switchThuChiTab('kiemsoat')" style="display:none;">🔎 Kiểm soát D-1</div>
+        <div class="thuchi-tab" id="thuChiTabDashboard" onclick="switchThuChiTab('dashboard')" style="display:none;">📊 Dashboard Tổng</div>
       </div>
 
       <!-- TAB: NHẬP GIAO DỊCH -->
@@ -1457,6 +1458,67 @@
         <div id="thuChiKSList">
           <div class="thuchi-empty">Chọn ngày rồi bấm "Soát sổ" để kiểm tra từng nhân viên (mặc định = hôm qua, D-1).</div>
         </div>
+      </div>
+
+      <div id="thuChiPaneDashboard" style="display:none;">
+        <div style="font-size:11px;color:var(--text3);line-height:1.6;margin-bottom:12px;padding:10px 12px;background:var(--surface2);border-radius:8px;">
+          <strong style="color:var(--text2);">Tab này là gì:</strong> tổng hợp toàn bộ nhân viên cùng lúc — không phải chọn từng người — từ file Google Sheet đối soát (RAW_DATA_T8 và các sheet cùng tiền tố RAW_DATA_). Dữ liệu tự phân loại theo cấu hình trong sheet <strong>CauHinhPhanLoaiThuChi</strong>.
+        </div>
+
+        <div class="ks-toolbar">
+          <input type="date" id="dbTongTu" title="Từ ngày">
+          <input type="date" id="dbTongDen" title="Đến ngày">
+          <button type="button" class="tab" style="font-size:11px;padding:8px 12px;" onclick="loadThuChiDashboardTong()">🔍 Lọc</button>
+          <select id="dbTongNVFilter" style="display:none;"></select>
+        </div>
+
+        <div id="dbTongValidationBox" style="display:none;margin:12px 0;"></div>
+
+        <div class="ks-summary">
+          <div class="thuchi-kpi thu">
+            <div class="thuchi-kpi-label">Tổng Thu</div>
+            <div class="thuchi-kpi-value" id="dbTongKpiThu">–</div>
+          </div>
+          <div class="thuchi-kpi" style="border-color:var(--red);">
+            <div class="thuchi-kpi-label">Tổng Chi</div>
+            <div class="thuchi-kpi-value" id="dbTongKpiChi" style="color:var(--red);">–</div>
+          </div>
+          <div class="thuchi-kpi net">
+            <div class="thuchi-kpi-label">Chênh lệch</div>
+            <div class="thuchi-kpi-value" id="dbTongKpiNet">–</div>
+          </div>
+          <div class="thuchi-kpi" style="border-color:var(--amber);">
+            <div class="thuchi-kpi-label">Chi chưa phân loại</div>
+            <div class="thuchi-kpi-value" id="dbTongKpiChua" style="color:var(--amber);">–</div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <label style="font-size:12px;color:var(--text3);margin-right:8px;">Xem theo:</label>
+          <button type="button" class="tab active" id="dbTongGranNgay" onclick="setDbTongGranularity('byDay')">Ngày</button>
+          <button type="button" class="tab" id="dbTongGranTuan" onclick="setDbTongGranularity('byWeek')">Tuần</button>
+          <button type="button" class="tab" id="dbTongGranThang" onclick="setDbTongGranularity('byMonth')">Tháng</button>
+          <button type="button" class="tab" id="dbTongGranQuy" onclick="setDbTongGranularity('byQuarter')">Quý</button>
+        </div>
+        <div style="margin-top:12px;"><canvas id="dbTongChartTime" height="220"></canvas></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;">
+          <div><h4 style="font-size:13px;margin:0 0 8px;color:var(--text2);">Cơ cấu Thu</h4><canvas id="dbTongChartThu" height="200"></canvas></div>
+          <div><h4 style="font-size:13px;margin:0 0 8px;color:var(--text2);">Cơ cấu Chi (theo nhóm)</h4><canvas id="dbTongChartChi" height="200"></canvas></div>
+        </div>
+
+        <h4 style="font-size:13px;margin:18px 0 8px;color:var(--text2);">Thu / Chi theo Nhân viên</h4>
+        <div class="table-scroll" style="max-height:280px;">
+          <table><thead><tr><th>Nhân viên</th><th style="text-align:right;">Thu</th><th style="text-align:right;">Chi</th><th style="text-align:right;">Còn lại</th></tr></thead>
+          <tbody id="dbTongNVBody"><tr><td class="thuchi-empty" colspan="4">Bấm "Lọc" để tải dữ liệu...</td></tr></tbody></table>
+        </div>
+
+        <h4 style="font-size:13px;margin:18px 0 8px;color:var(--red);">⚠️ Chi chưa phân loại — cần rà soát (top 100)</h4>
+        <div class="table-scroll" style="max-height:320px;">
+          <table><thead><tr><th>Nhân viên</th><th>Ngày</th><th>Nội dung</th><th>Tag</th><th style="text-align:right;">Số tiền</th></tr></thead>
+          <tbody id="dbTongChuaBody"></tbody></table>
+        </div>
+        <p style="font-size:11px;color:var(--text3);margin-top:8px;">👉 Để giảm danh sách này: mở sheet <b>CauHinhPhanLoaiThuChi</b>, thêm từ khoá nhận diện cho nhóm phù hợp, rồi bấm "Lọc" lại.</p>
       </div>
 
       <div class="modal-actions" style="margin-top:14px;">
@@ -1636,8 +1698,8 @@
                 <input type="text" id="qrKhachSDT" placeholder="VD: 0919892211" inputmode="tel">
               </div>
               <div>
-                <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Số tiền cần thu (nhập theo <b>nghìn đồng</b>)</label>
-                <input type="number" id="qrSoTienNghin" placeholder="VD: 1100 → 1.100.000đ" min="0" step="1" oninput="updateQrSoTienPreview()">
+                <label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px;">Số tiền cần thu (nhập theo <b>ngàn đồng</b>)</label>
+                <input type="number" id="qrSoTienNghin" placeholder="VD: 1.100 → 1.100.000đ" min="0" step="1" oninput="updateQrSoTienPreview()">
                 <div id="qrSoTienPreview" style="font-size:11px;color:var(--text3);margin-top:3px;">= 0 đ</div>
               </div>
             </div>
@@ -2270,7 +2332,7 @@
     🔓 <span id="adminBannerText">Đang đăng nhập với quyền Quản lý.</span>
   </div>
   <div id="userOfficeBanner" style="display:none;background:rgba(79,110,247,.1);border:1px solid var(--accent);border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:12px;color:var(--accent);font-weight:600;">
-    👤 <span id="userOfficeBannerText">Bạn đang xem lịch của văn phòng mình — chỉ xem được tới D+2.</span>
+    👤 <span id="userOfficeBannerText">Bạn đang xem lịch của văn phòng mình — chỉ xem được tới hết hôm nay; lịch ngày mai chỉ mở từ 17:00 tối nay.</span>
   </div>
 
 
@@ -2790,18 +2852,15 @@ function updateUserBadge(){
     badgeText.textContent = roleIcon + currentUser.nv + roleLabel;
   }
 
-  if(currentUser.isManager){
+  if(currentUser.isSuperManager){
     if(banner){
       banner.style.display='block';
       const bText=document.getElementById('adminBannerText');
       if(bText){
-        bText.textContent = currentUser.isSuperManager
-          ? 'Đang đăng nhập với quyền Super quản lý — xem được lịch đầy đủ TẤT CẢ văn phòng, không giới hạn ngày.'
-          : 'Đang đăng nhập với quyền Quản lý văn phòng "'+currentUser.boPhan+'" — chỉ xem được lịch của văn phòng này, không giới hạn ngày.';
+        bText.textContent = 'Đang đăng nhập với quyền Super quản lý — xem được lịch đầy đủ TẤT CẢ văn phòng, không giới hạn ngày.';
       }
     }
     if(officeBanner)officeBanner.style.display='none';
-    if(otCard)otCard.style.display='block';
   }else{
     if(banner)banner.style.display='none';
     if(officeBanner){
@@ -2809,12 +2868,14 @@ function updateUserBadge(){
       const oText=document.getElementById('userOfficeBannerText');
       if(oText){
         oText.textContent = currentUser.boPhan
-          ? 'Bạn đang xem lịch của văn phòng "'+currentUser.boPhan+'" — chỉ xem được tới D+2.'
+          ? (currentUser.isManager
+              ? 'Đang đăng nhập với quyền Quản lý văn phòng "'+currentUser.boPhan+'" — chỉ xem được lịch của văn phòng này tới hết hôm nay; lịch ngày mai chỉ mở từ 17:00 tối nay.'
+              : 'Bạn đang xem lịch của văn phòng "'+currentUser.boPhan+'" — chỉ xem được tới hết hôm nay; lịch ngày mai chỉ mở từ 17:00 tối nay.')
           : '⚠️ Chưa xác định được văn phòng của bạn — vui lòng đăng xuất/đăng nhập lại hoặc báo Admin kiểm tra Master_NV.';
       }
     }
-    if(otCard)otCard.style.display='none';
   }
+  if(otCard)otCard.style.display = currentUser.isManager ? 'block' : 'none';
 }
 
 // Enter để submit passcode đăng nhập
@@ -2824,22 +2885,36 @@ document.addEventListener('keydown',(e)=>{
   }
 });
 
-// isDateLocked: khoá ngày tương lai xa (> D+2) với NV thường
-// NGOẠI LỆ DUY NHẤT: ngày đó có dòng OFF (nghỉ phép đã duyệt) → hiện OFF, không lock
-// Ca thật tương lai (Ca Sáng/Tối/...) vẫn lock — NV không được xem lịch chưa công bố
+// isDateLocked: chỉ mở tới hết HÔM NAY cho mọi vai trò (kể cả Quản lý văn phòng).
+// Lịch NGÀY MAI (D+1) chỉ mở khi giờ hiện tại từ 17:00 trở đi.
+// NGOẠI LỆ DUY NHẤT: ngày đó có dòng OFF (nghỉ phép đã duyệt) → hiện OFF, không lock.
+// Chỉ S.Quản Lý mới xem được không giới hạn (cả tuần/mọi ngày).
+// Cache tra cứu "NV nào OFF ngày nào" dạng Set để isDateLocked không phải quét lại
+// toàn bộ filteredData mỗi lần gọi (tab Theo Văn Phòng gọi hàm này rất nhiều lần/lần render
+// — mỗi ô 1 lần — nên nếu để quét mảng từng lần sẽ rất chậm khi data nhiều tháng/năm).
+let __offLockCache={data:null,set:null};
+function getOffLockSet(){
+  if(__offLockCache.data!==filteredData){
+    const s=new Set();
+    filteredData.forEach(r=>{
+      if(r.loaiCa==='OFF'&&r.nv&&r.date)s.add(r.nv+'|'+fmtDate(r.date));
+    });
+    __offLockCache={data:filteredData,set:s};
+  }
+  return __offLockCache.set;
+}
 function isDateLocked(d, nvName){
-  if(currentUser&&currentUser.isManager)return false;
+  if(currentUser&&currentUser.isSuperManager)return false; // chỉ S.Quản Lý được bỏ qua khoá
   const today=new Date();today.setHours(0,0,0,0);
-  const limit=addDays(today,2); // D+2
+  const tomorrow=addDays(today,1); // D+1
+  const nowHour=new Date().getHours();
   const dd=new Date(d);dd.setHours(0,0,0,0);
-  if(dd<=limit)return false; // trong D+2 → không khoá
+  if(dd.getTime()<=today.getTime())return false; // hôm nay & quá khứ → không khoá
+  if(dd.getTime()===tomorrow.getTime()&&nowHour>=17)return false; // D+1 mở từ 17:00
   // Chỉ unlock nếu NV đó có dòng OFF đúng ngày này (nghỉ phép đã được duyệt)
   if(nvName){
     const ds=fmtDate(dd);
-    const hasOff=filteredData.some(r=>
-      r.nv===nvName && r.date && fmtDate(r.date)===ds && r.loaiCa==='OFF'
-    );
-    if(hasOff)return false;
+    if(getOffLockSet().has(nvName+'|'+ds))return false;
   }
   return true;
 }
@@ -3589,17 +3664,19 @@ function renderOfficeView(weekDaysIgnored,weekRowsIgnored){
   // NV thường chỉ thấy lịch của chính mình — Quản lý thấy tất cả
   const isMgr=currentUser&&currentUser.isManager;
   const myNv=currentUser?currentUser.nv:'';
-  const visibleNvs=isMgr?[...new Set(weekRows.map(r=>r.nv))]:[myNv];
+  const visibleNvsArr=isMgr?[...new Set(weekRows.map(r=>r.nv))]:[myNv];
+  const visibleNvs=new Set(visibleNvsArr); // Set để tra cứu O(1) thay vì .includes() O(n) mỗi dòng
   const dsList=days.map(d=>fmtDate(d));
+  const dsSet=new Set(dsList);
 
   // Gom theo VP (boPhan) -> theo ngày -> danh sách NV làm ca hôm đó (không tính OFF),
   // mỗi ngày sắp theo giờ bắt đầu ca để hàng nào cũng thẳng theo trình tự thời gian trong ngày.
   const byOffice={};
   weekRows.forEach(r=>{
-    if(!r.nv||!visibleNvs.includes(r.nv))return;
+    if(!r.nv||!visibleNvs.has(r.nv))return;
     if(!r.boPhan||r.boPhan==='OFF'||r.loaiCa==='OFF')return;
     const ds=fmtDate(r.date);
-    if(!dsList.includes(ds))return;
+    if(!dsSet.has(ds))return;
     if(!byOffice[r.boPhan])byOffice[r.boPhan]={};
     if(!byOffice[r.boPhan][ds])byOffice[r.boPhan][ds]=[];
     byOffice[r.boPhan][ds].push(r);
@@ -3609,10 +3686,10 @@ function renderOfficeView(weekDaysIgnored,weekRowsIgnored){
   // hay xảy ra chéo giữa 2 VP khác nhau.
   const nvDateEntries={};
   weekRows.forEach(r=>{
-    if(!r.nv||!visibleNvs.includes(r.nv))return;
+    if(!r.nv||!visibleNvs.has(r.nv))return;
     if(!r.boPhan||r.boPhan==='OFF'||r.loaiCa==='OFF')return;
     const ds=fmtDate(r.date);
-    if(!dsList.includes(ds))return;
+    if(!dsSet.has(ds))return;
     const k=r.nv+'|'+ds;
     if(!nvDateEntries[k])nvDateEntries[k]=[];
     nvDateEntries[k].push(r);
@@ -3742,7 +3819,7 @@ function renderOfficeView(weekDaysIgnored,weekRowsIgnored){
   const totalCellsHtml=dsList.map(ds=>{
     const set=new Set();
     weekRows.forEach(r=>{
-      if(!r.nv||!visibleNvs.includes(r.nv))return;
+      if(!r.nv||!visibleNvs.has(r.nv))return;
       if(!r.boPhan||r.boPhan==='OFF'||r.loaiCa==='OFF')return;
       if(fmtDate(r.date)!==ds)return;
       set.add(r.nv);
@@ -3757,10 +3834,10 @@ function renderOfficeView(weekDaysIgnored,weekRowsIgnored){
   // Hàng OFF gộp chung toàn công ty ở cuối bảng — giống ảnh mẫu, khỏi lặp OFF theo từng VP
   const offByDate={};
   weekRows.forEach(r=>{
-    if(!r.nv||!visibleNvs.includes(r.nv))return;
+    if(!r.nv||!visibleNvs.has(r.nv))return;
     if(r.boPhan!=='OFF'&&r.loaiCa!=='OFF')return;
     const ds=fmtDate(r.date);
-    if(!dsList.includes(ds))return;
+    if(!dsSet.has(ds))return;
     if(!offByDate[ds])offByDate[ds]=[];
     offByDate[ds].push(r.nv);
   });
@@ -3797,8 +3874,13 @@ function showNvWeek(nv){
     const ds=fmtDate(d);
     const entries=weekRows.filter(r=>r.nv===nv&&fmtDate(r.date)===ds);
     const isOff=!entries.length||entries.every(e=>e.boPhan==='OFF'||e.loaiCa==='OFF');
+    // Đồng bộ khoá lịch với bảng chính: NV/Quản lý không được xem trước ca thật của ngày
+    // vượt giới hạn (chỉ tới hết hôm nay; ngày mai mở từ 17:00 tối nay),
+    // trừ khi ngày đó là OFF (nghỉ phép đã duyệt) — isDateLocked đã tự xử lý ngoại lệ này.
+    const locked=isDateLocked(d, nv);
     let content;
-    if(!entries.length)content=`<span style="color:var(--text3);">—</span>`;
+    if(locked)content=`<span style="color:var(--text3);">🔒 Chưa công bố</span>`;
+    else if(!entries.length)content=`<span style="color:var(--text3);">—</span>`;
     else if(isOff)content=`<span style="color:#dc2626;font-weight:700;">OFF</span>`;
     else content=entries.filter(e=>e.boPhan!=='OFF'&&e.loaiCa!=='OFF')
       .map(e=>`<div>${shortOffice(e.boPhan)} · <b>${e.caLam||''}</b></div>`).join('');
@@ -5149,7 +5231,8 @@ let qrLastReport=null;
 
 function updateQrSoTienPreview(){
   const v=parseInt(document.getElementById('qrSoTienNghin').value,10);
-  const soTien=v?v*1000:0;
+  const soTienNghin=v||0;
+  const soTien=soTienNghin*1000;
   document.getElementById('qrSoTienPreview').textContent='= '+soTien.toLocaleString('vi-VN')+' đ';
 }
 
@@ -5356,12 +5439,33 @@ async function generateQRThanhToan(){
   const brand=qrConfigCache.brand;
   const sdt=document.getElementById('qrKhachSDT').value.trim();
   const soTienNghin=parseInt(document.getElementById('qrSoTienNghin').value,10);
-  const soTien=soTienNghin?soTienNghin*1000:0;
+  const soTien=(soTienNghin||0)*1000;
   const preset=document.getElementById('qrNoiDungLoai').value;
 
   if(!sdt){statusEl.textContent='Vui lòng nhập số điện thoại khách hàng.';statusEl.className='qr-copy-status err';return;}
   if(!soTien||soTien<=0){statusEl.textContent='Vui lòng nhập số tiền cần thu hợp lệ.';statusEl.className='qr-copy-status err';return;}
   if(!preset){statusEl.textContent='Chưa có mẫu nội dung — kiểm tra sheet CauHinhQR.';statusEl.className='qr-copy-status err';return;}
+
+  // CẢNH BÁO NHẦM ĐƠN VỊ: ô nhập tính theo NGÀN đồng (VD: gõ 1.100 = 1.100.000đ).
+  // NV hay lỡ gõ dư số 0 (VD: gõ 500.000 tưởng là 500K nhưng thành 500.000.000đ)
+  // -> chặn lại, bắt xác nhận thủ công nếu 1 lệnh vượt 15 triệu để tránh tạo nhầm QR số tiền lớn.
+  const NGUONG_CANH_BAO_QR=15000000;
+  if(soTien>NGUONG_CANH_BAO_QR){
+    const xacNhan=confirm(
+      '⚠️ CẢNH BÁO SỐ TIỀN LỚN BẤT THƯỜNG\n\n'+
+      'Số tiền: '+soTien.toLocaleString('vi-VN')+' đ\n'+
+      '(vượt ngưỡng 15.000.000đ/lệnh)\n\n'+
+      'Ô nhập tính theo NGHÌN đồng — rất có thể anh/chị đã gõ dư số 0 '+
+      '(VD: định gõ 500K nhưng lỡ thành 500 triệu).\n\n'+
+      'Bấm OK nếu số tiền này CHÍNH XÁC.\n'+
+      'Bấm Huỷ để quay lại kiểm tra và sửa lại.'
+    );
+    if(!xacNhan){
+      statusEl.textContent='Đã huỷ tạo QR — vui lòng kiểm tra lại số tiền trước khi tạo lại.';
+      statusEl.className='qr-copy-status err';
+      return;
+    }
+  }
 
   // Nội dung = SĐT nhân viên nhập + mẫu soạn sẵn trong Sheet, ví dụ: "0919892211 THANH TOAN VE"
   const addInfo=removeVietnameseTones(`${sdt} ${preset}`);
@@ -5486,18 +5590,28 @@ async function submitThuChiLogin(){
 }
 
 function switchThuChiTab(tab){
-  const isNhap=tab==='nhap', isBaoCao=tab==='baocao', isKiemSoat=tab==='kiemsoat';
+  const isNhap=tab==='nhap', isBaoCao=tab==='baocao', isKiemSoat=tab==='kiemsoat', isDashboard=tab==='dashboard';
   document.getElementById('thuChiTabNhap').classList.toggle('active',isNhap);
   document.getElementById('thuChiTabBaoCao').classList.toggle('active',isBaoCao);
   document.getElementById('thuChiTabKiemSoat').classList.toggle('active',isKiemSoat);
+  document.getElementById('thuChiTabDashboard').classList.toggle('active',isDashboard);
   document.getElementById('thuChiPaneNhap').style.display=isNhap?'block':'none';
   document.getElementById('thuChiPaneBaoCao').style.display=isBaoCao?'block':'none';
   document.getElementById('thuChiPaneKiemSoat').style.display=isKiemSoat?'block':'none';
+  document.getElementById('thuChiPaneDashboard').style.display=isDashboard?'block':'none';
 
-  // Tab Kiểm soát D-1 chỉ dành cho Quản lý — dùng chính isManager đã xác định được
-  // từ lần checkPasscode/getThuChiReport gần nhất (không tự suy đoán quyền trên client).
+  // Tab Kiểm soát D-1 / Dashboard Tổng chỉ dành cho Quản lý — dùng chính isManager đã
+  // xác định được từ lần checkPasscode/getThuChiReport gần nhất (không tự suy đoán quyền trên client).
   const isManager=!!(currentUser&&currentUser.isManager&&currentUser.nv===thuChiUser?.nv);
   document.getElementById('thuChiTabKiemSoat').style.display=isManager?'block':'none';
+  document.getElementById('thuChiTabDashboard').style.display=isManager?'block':'none';
+
+  if(isDashboard&&!dbTongLastData){
+    const y=new Date();y.setDate(y.getDate()-30);
+    if(!document.getElementById('dbTongTu').value)document.getElementById('dbTongTu').value=fmtDate(y);
+    if(!document.getElementById('dbTongDen').value)document.getElementById('dbTongDen').value=fmtDate(new Date());
+    loadThuChiDashboardTong();
+  }
 
   if(isBaoCao){
     setupThuChiReportFilters();
@@ -6997,16 +7111,20 @@ function updateLineDTRotationSuggestion(){
   const dateObj=new Date(y,m-1,d);
 
   // CHẶN RÒ RỈ LỊCH LÀM VIỆC: khung gợi ý này liệt kê tên + giờ vào/ra ca của cả VP —
-  // nếu NV chọn ngày vượt D+2 (lịch chưa công bố), TUYỆT ĐỐI không hiển thị/tự điền,
-  // vì sẽ lộ ai làm ca sáng/chiều ngày đó ra ngoài, phá luật khoá D+2 đang áp dụng cho
-  // lịch chính. Chỉ Quản lý (đăng nhập đúng tài khoản quản lý ở Line ĐT) mới xem được.
+  // nếu NV chọn ngày vượt giới hạn cho phép (lịch chưa công bố), TUYỆT ĐỐI không hiển
+  // thị/tự điền, vì sẽ lộ ai làm ca sáng/chiều ngày đó ra ngoài, phá luật khoá lịch chính.
+  // Quy tắc: chỉ xem được tới hết HÔM NAY; lịch NGÀY MAI (D+1) chỉ mở từ 17:00 tối nay.
+  // Chỉ S.Quản Lý (đăng nhập đúng tài khoản S.Quản Lý ở Line ĐT) mới được bỏ qua khoá này.
   const today=new Date();today.setHours(0,0,0,0);
-  const limit=addDays(today,2);
+  const tomorrow=addDays(today,1); // D+1
+  const nowHour=new Date().getHours();
   const ddCheck=new Date(dateObj);ddCheck.setHours(0,0,0,0);
-  const isManagerHere = currentUser && currentUser.isManager && currentUser.nv===lineDTUser?.nv;
-  if(ddCheck>limit && !isManagerHere){
+  const isSuperManagerHere = currentUser && currentUser.isSuperManager && currentUser.nv===lineDTUser?.nv;
+  let dayIsLocked = ddCheck.getTime()>today.getTime(); // mặc định: mọi ngày tương lai đều khoá
+  if(ddCheck.getTime()===tomorrow.getTime() && nowHour>=17) dayIsLocked=false; // D+1 mở từ 17:00
+  if(dayIsLocked && !isSuperManagerHere){
     box.innerHTML='<div style="background:var(--surface2);border-radius:8px;padding:8px 10px;font-size:11px;color:var(--text3);">'
-      +'🔒 Lịch ngày này chưa công bố (chỉ xem trước D+2) — vui lòng tự nhập số line/bàn.'
+      +'🔒 Lịch ngày này chưa công bố (chỉ xem tới hết hôm nay; ngày mai mở từ 17:00 tối nay) — vui lòng tự nhập số line/bàn.'
       +'</div>';
     return; // không tính toán, không tự điền -> không lộ tên/ca của người khác
   }
@@ -8062,6 +8180,120 @@ document.addEventListener('keydown',(e)=>{
     submitChamCongLogin();
   }
 });
+
+// ============================================================
+// DASHBOARD TỔNG — Thu Chi (chỉ Quản lý), đọc trực tiếp từ RAW_DATA_T8
+// qua action=getThuChiDashboardTong (server tự kiểm tra isManager).
+// ============================================================
+let dbTongLastData=null;
+let dbTongGranularity='byDay';
+let dbTongCharts={};
+
+function setDbTongGranularity(g){
+  dbTongGranularity=g;
+  ['Ngay','Tuan','Thang','Quy'].forEach(k=>{});
+  document.getElementById('dbTongGranNgay').classList.toggle('active',g==='byDay');
+  document.getElementById('dbTongGranTuan').classList.toggle('active',g==='byWeek');
+  document.getElementById('dbTongGranThang').classList.toggle('active',g==='byMonth');
+  document.getElementById('dbTongGranQuy').classList.toggle('active',g==='byQuarter');
+  if(dbTongLastData)renderDbTongTimeChart(dbTongLastData);
+}
+
+async function loadThuChiDashboardTong(){
+  if(!thuChiUser)return;
+  const tu=document.getElementById('dbTongTu').value||'';
+  const den=document.getElementById('dbTongDen').value||'';
+  const box=document.getElementById('dbTongValidationBox');
+  box.style.display='none';
+  document.getElementById('dbTongNVBody').innerHTML='<tr><td class="thuchi-empty" colspan="4">Đang tải...</td></tr>';
+
+  try{
+    let url=CONFIG.payrollUrl+'?action=getThuChiDashboardTong&nv='+encodeURIComponent(thuChiUser.nv)+'&passcode='+encodeURIComponent(thuChiUser.passcode);
+    if(tu)url+='&tu='+encodeURIComponent(tu);
+    if(den)url+='&den='+encodeURIComponent(den);
+    const json=await fetchJSONP(url);
+    if(json.status!=='ok')throw new Error(json.message||'Không tải được Dashboard Tổng');
+    dbTongLastData=json.data;
+    renderDbTongAll(dbTongLastData);
+  }catch(e){
+    document.getElementById('dbTongNVBody').innerHTML='<tr><td class="thuchi-empty" colspan="4">❌ Lỗi: '+escapeHtml(e.message)+'</td></tr>';
+  }
+}
+
+function renderDbTongValidation(v){
+  const box=document.getElementById('dbTongValidationBox');
+  if(!v||(!v.totalErrors&&!v.totalWarnings)){
+    box.style.display='block';
+    box.innerHTML='<div style="padding:10px 12px;border-radius:8px;background:rgba(16,185,129,.12);border:1px solid var(--green);color:var(--green);font-size:12.5px;">✅ Dữ liệu sạch, không phát hiện lỗi.</div>';
+    return;
+  }
+  box.style.display='block';
+  const errHtml=(v.errors||[]).slice(0,30).map(e=>`<div>· ${escapeHtml(e.sheet)} dòng ${e.row}: ${escapeHtml(e.issue)}</div>`).join('');
+  const warnHtml=(v.warnings||[]).slice(0,20).map(e=>`<div>· ${escapeHtml(e.sheet)} dòng ${e.row}: ${escapeHtml(e.issue)}</div>`).join('');
+  box.innerHTML=`<div style="padding:10px 12px;border-radius:8px;background:rgba(239,68,68,.1);border:1px solid var(--red);color:var(--red);font-size:12.5px;max-height:180px;overflow:auto;">
+    <strong>🚫 ${v.totalErrors} lỗi dữ liệu${v.totalWarnings?', '+v.totalWarnings+' nghi trùng lặp':''}</strong> (đã loại khỏi tổng hợp bên dưới)
+    ${errHtml}${warnHtml?'<div style="margin-top:6px;color:var(--amber);">Nghi trùng lặp:</div>'+warnHtml:''}
+  </div>`;
+}
+
+function renderDbTongAll(d){
+  renderDbTongValidation(d.validation);
+
+  document.getElementById('dbTongKpiThu').textContent=fmtMoney(d.tongHop.tongThu)+' đ';
+  document.getElementById('dbTongKpiChi').textContent=fmtMoney(d.tongHop.tongChi)+' đ';
+  const netEl=document.getElementById('dbTongKpiNet');
+  netEl.textContent=fmtMoney(d.tongHop.chenhLech)+' đ';
+  netEl.style.color=d.tongHop.chenhLech>=0?'var(--green)':'var(--red)';
+  const chua=(d.chiCategory||[]).filter(c=>c.category.indexOf('chưa phân loại')!==-1).reduce((s,c)=>s+c.total,0);
+  document.getElementById('dbTongKpiChua').textContent=fmtMoney(chua)+' đ';
+
+  document.getElementById('dbTongNVBody').innerHTML=(d.byNV||[]).map(o=>`
+    <tr><td>${escapeHtml(o.nv)}</td>
+    <td class="thuchi-amount THU" style="text-align:right;">${fmtMoney(o.thu)} đ</td>
+    <td class="thuchi-amount CHI" style="text-align:right;">${fmtMoney(o.chi)} đ</td>
+    <td style="text-align:right;color:${o.conLai>=0?'var(--green)':'var(--red)'};">${fmtMoney(o.conLai)} đ</td></tr>`).join('')
+    ||'<tr><td class="thuchi-empty" colspan="4">Không có dữ liệu trong khoảng đã chọn</td></tr>';
+
+  document.getElementById('dbTongChuaBody').innerHTML=(d.chuaPhanLoai||[]).map(r=>`
+    <tr><td>${escapeHtml(r.nv)}</td><td>${r.ngay}</td><td>${escapeHtml(r.noiDung)}</td><td>${escapeHtml(r.tag||'')}</td>
+    <td class="thuchi-amount CHI" style="text-align:right;">${fmtMoney(r.soTien)} đ</td></tr>`).join('')
+    ||'<tr><td class="thuchi-empty" colspan="5">Không có khoản Chi nào chưa phân loại 🎉</td></tr>';
+
+  renderDbTongTimeChart(d);
+  drawDbTongPie('dbTongChartThu',d.thuCategory);
+  drawDbTongPie('dbTongChartChi',d.chiCategory);
+}
+
+function renderDbTongTimeChart(d){
+  const arr=d[dbTongGranularity]||[];
+  const labels=arr.map(o=>o.key);
+  drawDbTongBar('dbTongChartTime',labels,[
+    {label:'Thu',data:arr.map(o=>o.thu),backgroundColor:'#10b981'},
+    {label:'Chi',data:arr.map(o=>o.chi),backgroundColor:'#ef4444'}
+  ]);
+}
+
+function drawDbTongBar(id,labels,datasets){
+  if(typeof Chart==='undefined')return;
+  if(dbTongCharts[id])dbTongCharts[id].destroy();
+  dbTongCharts[id]=new Chart(document.getElementById(id),{
+    type:'bar',
+    data:{labels,datasets},
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>new Intl.NumberFormat('vi-VN').format(v)}}}}
+  });
+}
+
+function drawDbTongPie(id,arr){
+  if(typeof Chart==='undefined')return;
+  if(dbTongCharts[id])dbTongCharts[id].destroy();
+  const labels=(arr||[]).map(o=>o.category);
+  const data=(arr||[]).map(o=>o.total);
+  dbTongCharts[id]=new Chart(document.getElementById(id),{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:['#3355d8','#10b981','#ef4444','#f59e0b','#8b5cf6','#0ea5a0','#64748b','#ec4899','#22c55e','#dc2626','#eab308']}]},
+    options:{responsive:true,plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:10}}}}}
+  });
+}
 
 // ============================================================
 // INIT
