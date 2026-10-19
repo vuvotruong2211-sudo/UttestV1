@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tiêu hao nhiên liệu</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f4f4f2; --surface: #fcfcfb; --surface-2: #f0efec; --border: #e2e1dc;
+    --text: #0b0b0b; --text-2: #52514e; --text-3: #7a7974;
+    --accent: #2a78d6; --accent-soft: #e6f0fc;
+    --good: #0ca30c; --good-text: #006300; --good-bg: #e7f6e7;
+    --bad: #d03b3b; --bad-text: #b02a2a; --bad-bg: #fbeaea;
+    --div-neg: #2a78d6; --div-pos: #e34948; --div-mid: #c9c8c2;
+    --muted-bg: #efeeea;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #121211; --surface: #1a1a19; --surface-2: #232321; --border: #33332f;
+      --text: #f0efec; --text-2: #c3c2b7; --text-3: #8f8e86;
+      --accent: #3987e5; --accent-soft: #1d2c40;
+      --good: #0ca30c; --good-text: #5fd35f; --good-bg: #16301a;
+      --bad: #d03b3b; --bad-text: #f08a8a; --bad-bg: #3a1c1c;
+      --div-neg: #3987e5; --div-pos: #e66767; --div-mid: #4a4a46;
+      --muted-bg: #262624;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.45 "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -.01em; }
+  .sub { color: var(--text-3); font-size: 12.5px; margin-top: 2px; }
+  button { font: inherit; cursor: pointer; }
+  .btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 7px 12px; }
+  .btn:hover { border-color: var(--accent); }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--surface);
+             border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .filters label { font-size: 12px; color: var(--text-3); display: flex; flex-direction: column; gap: 3px; }
+  select, input[type=search] { font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid var(--border);
+            border-radius: 8px; padding: 6px 10px; min-width: 150px; }
+  input[type=search] { min-width: 200px; }
+  .seg-ctl { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+  .seg-ctl button { white-space: nowrap; border: 0; background: transparent; color: var(--text-2); padding: 5px 10px; border-radius: 6px; }
+  .seg-ctl button.on { background: var(--surface); color: var(--text); box-shadow: 0 0 0 1px var(--border); font-weight: 600; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .kpi .lab { font-size: 12.5px; color: var(--text-2); }
+  .kpi .val { font-size: 28px; font-weight: 650; letter-spacing: -.02em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .kpi .val small { font-size: 13px; font-weight: 500; color: var(--text-3); margin-left: 3px; }
+  .kpi .foot { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+  .delta-up { color: var(--bad-text); font-weight: 600; }
+  .delta-down { color: var(--good-text); font-weight: 600; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 14px; overflow-x: auto; }
+  .tabs button { border: 0; background: none; padding: 10px 14px; color: var(--text-2); border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tabs button.on { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+  .panel-h { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .panel-h h2 { font-size: 15px; margin: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--text-2); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 10px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--border); }
+  th { font-size: 12px; font-weight: 600; color: var(--text-2); background: var(--surface-2); position: sticky; top: 0; cursor: pointer; user-select: none; }
+  th.num, td.num { text-align: right; }
+  th .arr { color: var(--text-3); font-size: 10px; margin-left: 3px; }
+  tbody tr.click { cursor: pointer; }
+  tbody tr.click:hover { background: var(--surface-2); }
+  tbody tr.sel { background: var(--accent-soft); }
+  td.muted, .muted { color: var(--text-3); }
+  .plate { font-weight: 600; }
+  .chip { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 99px; background: var(--muted-bg); color: var(--text-2); }
+
+  .dev { display: flex; align-items: center; gap: 8px; min-width: 200px; }
+  .dev .track { position: relative; width: 140px; height: 14px; }
+  .dev .mid { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--div-mid); }
+  .dev .bar { position: absolute; top: 2px; height: 10px; }
+  .dev .bar.pos { left: 50%; background: var(--div-pos); border-radius: 0 4px 4px 0; }
+  .dev .bar.neg { right: 50%; background: var(--div-neg); border-radius: 4px 0 0 4px; }
+  .dev .pct { width: 54px; text-align: right; color: var(--text); }
+
+  .status { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+  .st-bad { color: var(--bad-text); background: var(--bad-bg); }
+  .st-good { color: var(--good-text); background: var(--good-bg); }
+  .st-norm { color: var(--text-2); background: var(--muted-bg); font-weight: 500; }
+  .st-na { color: var(--text-3); font-weight: 400; }
+
+  .detail { border-top: 2px solid var(--accent); padding: 12px 16px 16px; }
+  .detail h3 { margin: 0 0 8px; font-size: 14px; }
+  .ok-y { color: var(--good-text); }
+  .ok-n { color: var(--bad-text); }
+
+  .qgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+  .note { font-size: 12.5px; color: var(--text-3); padding: 14px 4px 0; line-height: 1.6; }
+  .empty { padding: 28px; text-align: center; color: var(--text-3); }
+  #tip { position: fixed; pointer-events: none; z-index: 10; background: var(--text); color: var(--surface);
+         font-size: 12px; padding: 6px 9px; border-radius: 6px; max-width: 280px; display: none; line-height: 1.5; }
+  #loading { padding: 80px 16px; text-align: center; color: var(--text-2); }
+  .err { color: var(--bad-text); background: var(--bad-bg); padding: 12px 14px; border-radius: 10px; }
+  @media (max-width: 640px) {
+    h1 { font-size: 19px; }
+    .kpi .val { font-size: 22px; }
+    .kpis { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .kpi { padding: 10px 12px; }
+    .kpi .foot { font-size: 11px; }
+    select, input[type=search] { min-width: 0; width: 100%; }
+    .filters label { flex: 1 1 140px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Tiêu hao nhiên liệu – theo xe &amp; tài xế</h1>
+      <div class="sub" id="meta">Đang tải…</div>
+    </div>
+    <button class="btn" id="reload">↻ Tải lại dữ liệu</button>
+  </header>
+
+  <div id="loading">Đang đọc dữ liệu dầu từ Google Sheet…</div>
+  <div id="app" hidden>
+    <div class="filters">
+      <label>Kỳ (tháng)<select id="fKy"></select></label>
+      <label>Tuyến<select id="fGrp">
+        <option value="">Tất cả tuyến</option>
+        <option value="QNG">HCM – Quảng Ngãi</option>
+        <option value="DL">HCM – Đà Lạt</option>
+      </select></label>
+      <label>Loại xe<span class="seg-ctl" id="fNhom">
+        <button data-v="" class="on">Tất cả</button><button data-v="XE KHÁCH">Xe khách</button><button data-v="XE TẢI">Xe tải</button>
+      </span></label>
+      <label>Tìm biển số / tài xế<input type="search" id="fQ" placeholder="VD: 061.78 hoặc Khải"></label>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="tabs" id="tabs">
+      <button data-t="xe" class="on">Theo xe</button>
+      <button data-t="tx">Theo tài xế</button>
+      <button data-t="dq">Chất lượng dữ liệu</button>
+    </div>
+    <div id="view"></div>
+
+    <div class="note">
+      <b>Cách tính:</b> đổ đầy → đổ đầy theo ODO; các lần châm giữa đường được cộng vào chặng. Chặng thiếu lần đổ hoặc ODO sai bị loại, không tính.
+      <b>Chuẩn</b> của mỗi xe / tài xế = mức TB của đúng tuyến + cấu hình xe mà họ đã chạy trong kỳ (tính theo km), nên xe Đà Lạt không bị so với xe Quảng Ngãi.
+      Xe tải chưa khai ODO → <b>ước tính</b> = lít TB mỗi lần đổ đầy ÷ km/chiều đo từ xe khách (<span id="legKm"></span> km).
+      Tài xế của chặng = tài xế khai báo ở lần đổ đầu chặng.
+    </div>
+  </div>
+</div>
+<div id="tip"></div>
+
+<script>
+(function () {
+  var RAW = null;
+  var S = { ky: '', grp: '', nhom: '', q: '', tab: 'xe', sort: { xe: ['dev', -1], tx: ['dev', -1] }, sel: null };
+  var $ = function (id) { return document.getElementById(id); };
+  var nf = function (x, d) { return x == null || isNaN(x) ? '–' : x.toLocaleString('vi-VN', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); };
+  var pct = function (x) { return x == null || isNaN(x) ? '–' : (x > 0 ? '+' : '') + (x * 100).toFixed(1).replace('.', ',') + '%'; };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var kyLabel = function (k) { return k ? 'T' + (+k.slice(5)) + '/' + k.slice(0, 4) : 'Tất cả'; };
+  var grpLabel = { QNG: 'HCM – Quảng Ngãi', DL: 'HCM – Đà Lạt' };
+
+  // ---------------- data load ----------------
+  function load() {
+    $('loading').hidden = false; $('app').hidden = true;
+    if (window.google && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(init).withFailureHandler(fail).getFuelDashboardData();
+    } else if (window.__FUEL_DEMO__) {
+      init(window.__FUEL_DEMO__);
+    } else fail({ message: 'Không chạy trong Google Apps Script.' });
+  }
+  function fail(e) { $('loading').innerHTML = '<div class="err">Lỗi tải dữ liệu: ' + esc(e && e.message || e) + '</div>'; }
+
+  function init(data) {
+    RAW = data;
+    var kys = {};
+    data.fills.forEach(function (f) { kys[f.ky] = 1; });
+    var list = Object.keys(kys).sort().reverse();
+    $('fKy').innerHTML = '<option value="">Tất cả các tháng</option>' +
+      list.map(function (k) { return '<option value="' + k + '">' + kyLabel(k) + '</option>'; }).join('');
+    if (!S.ky || list.indexOf(S.ky) < 0) S.ky = list[0] || '';
+    $('fKy').value = S.ky;
+    var lastTs = data.fills.reduce(function (m, f) { return f.ts > m ? f.ts : m; }, '');
+    $('meta').textContent = 'Nguồn: tab "' + data.source + '" · dữ liệu đến ' + fmtDT(lastTs) + ' · ' +
+      data.fills.length + ' lần đổ · cập nhật ' + new Date(data.generatedAt).toLocaleString('vi-VN');
+    $('legKm').textContent = nf(data.legKmQng);
+    $('loading').hidden = true; $('app').hidden = false;
+    render();
+  }
+  function fmtDT(s) { return s ? s.slice(8, 10) + '/' + s.slice(5, 7) + ' ' + s.slice(11) : ''; }
+  function fmtD(s) { return s ? s.slice(8, 10) + '/' + s.slice(5, 7) : ''; }
+
+  // ---------------- aggregation ----------------
+  function inScope(o, ky) {
+    return (!ky || o.ky === ky) && (!S.grp || o.grp === S.grp);
+  }
+  function benchFor(ky) {
+    var b = {}, tr = { lit: 0, n: 0 };
+    RAW.segments.forEach(function (s) {
+      if (!s.ok || s.nhom !== 'XE KHÁCH' || !inScope(s, ky)) return;
+      var k = s.grp + '|' + s.cfg; b[k] = b[k] || { km: 0, lit: 0 };
+      b[k].km += s.km; b[k].lit += s.lit;
+    });
+    RAW.fills.forEach(function (f) { if (f.nhom === 'XE TẢI' && f.full && inScope(f, ky)) { tr.lit += f.lit; tr.n++; } });
+    var out = {};
+    Object.keys(b).forEach(function (k) { out[k] = b[k].lit / b[k].km * 100; });
+    out.TRUCK = tr.n ? tr.lit / tr.n / RAW.legKmQng * 100 : null;
+    return out;
+  }
+  function routeL100(ky, grp) {
+    var km = 0, lit = 0, n = 0, l1 = 0, n1 = 0;
+    RAW.segments.forEach(function (s) {
+      if (s.ok && s.nhom === 'XE KHÁCH' && s.grp === grp && (!ky || s.ky === ky)) {
+        km += s.km; lit += s.lit; n++;
+        if (s.expFills === 1) { l1 += s.lit; n1++; }   // chặng đơn = 1 chiều (QNG) / 1 vòng (ĐL)
+      }
+    });
+    return { v: km ? lit / km * 100 : null, n: n, perLeg: n1 ? l1 / n1 : null };
+  }
+  function truckL100(ky) {
+    var lit = 0, n = 0;
+    RAW.fills.forEach(function (f) { if (f.nhom === 'XE TẢI' && f.full && (!ky || f.ky === ky)) { lit += f.lit; n++; } });
+    return { v: n ? lit / n / RAW.legKmQng * 100 : null, n: n, perLeg: n ? lit / n : null };
+  }
+  function matchQ(a, b) {
+    if (!S.q) return true;
+    var q = S.q.toLowerCase();
+    return (a || '').toLowerCase().indexOf(q) >= 0 || (b || '').toLowerCase().indexOf(q) >= 0;
+  }
+
+  function groupRows(keyFn, labelFn) {
+    var bench = benchFor(S.ky), rows = {};
+    function row(k, f) {
+      if (!rows[k]) rows[k] = labelFn(f);
+      return rows[k];
+    }
+    RAW.fills.forEach(function (f) {
+      if (!inScope(f, S.ky) || (S.nhom && f.nhom !== S.nhom)) return;
+      var r = row(keyFn(f), f);
+      r.fills++; r.litAll += f.lit;
+      if (!f.hasOdo && f.nhom === 'XE KHÁCH') r.noOdo++;
+      if (f.nhom === 'XE TẢI' && f.full) { r.tLit += f.lit; r.tN++; }
+      r.grps[f.grp] = (r.grps[f.grp] || 0) + 1;
+      r.other[r.mode === 'xe' ? f.tx : f.bs] = 1;
+    });
+    RAW.segments.forEach(function (s) {
+      if (!inScope(s, S.ky) || (S.nhom && s.nhom !== S.nhom)) return;
+      var r = row(keyFn(s), s);
+      r.segs.push(s);
+      if (!s.ok) { r.bad++; return; }
+      r.ok++; r.km += s.km; r.lit += s.lit;
+      var bv = bench[s.grp + '|' + s.cfg];
+      if (bv != null) r.expLit += s.km * bv / 100;
+    });
+    var MIN = RAW.config.MIN_SEGMENTS_RANK, A = RAW.config.ALERT_PCT;
+    return Object.keys(rows).map(function (k) {
+      var r = rows[k];
+      r.grp = Object.keys(r.grps).sort(function (a, b) { return r.grps[b] - r.grps[a]; })[0] || '';
+      if (r.nhom === 'XE TẢI') {
+        r.est = true; r.n = r.tN;
+        r.l100 = r.tN ? r.tLit / r.tN / RAW.legKmQng * 100 : null;
+        r.bench = bench.TRUCK;
+        r.perLeg = r.tN ? r.tLit / r.tN : null;
+      } else {
+        r.n = r.ok;
+        r.l100 = r.km ? r.lit / r.km * 100 : null;
+        r.bench = r.km ? r.expLit / r.km * 100 : null;
+        r.perLeg = null;
+      }
+      r.enough = r.n >= MIN && r.l100 != null && r.bench;
+      r.dev = r.enough ? r.l100 / r.bench - 1 : null;
+      r.status = !r.enough ? 'na' : r.dev > A ? 'bad' : r.dev < -A ? 'good' : 'norm';
+      r.noOdoPct = r.nhom === 'XE KHÁCH' && r.fills ? r.noOdo / r.fills : null;
+      r.otherList = Object.keys(r.other).filter(Boolean).sort();
+      return r;
+    }).filter(function (r) { return matchQ(r.key, r.otherList.join(' ')); });
+  }
+  function blank(key, f, mode) {
+    return { key: key, mode: mode, nhom: f.nhom, cfg: f.cfg, fills: 0, litAll: 0, noOdo: 0, tLit: 0, tN: 0,
+             ok: 0, bad: 0, km: 0, lit: 0, expLit: 0, segs: [], grps: {}, other: {} };
+  }
+  function vehicleRows() {
+    return groupRows(function (o) { return o.bs; }, function (f) { return blank(f.bs, f, 'xe'); });
+  }
+  function driverRows() {
+    return groupRows(function (o) { return o.tx + '|' + o.nhom; }, function (f) {
+      var b = blank(f.tx, f, 'tx'); b.id = f.tx + '|' + f.nhom; return b;
+    });
+  }
+
+  // ---------------- render ----------------
+  function render() {
+    renderKpis();
+    document.querySelectorAll('#tabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.t === S.tab); });
+    if (S.tab === 'xe') renderTable('xe', vehicleRows());
+    else if (S.tab === 'tx') renderTable('tx', driverRows());
+    else renderQuality();
+  }
+
+  function prevKy(k) {
+    if (!k) return '';
+    var y = +k.slice(0, 4), m = +k.slice(5) - 1;
+    if (m === 0) { y--; m = 12; }
+    return y + '-' + (m < 10 ? '0' : '') + m;
+  }
+  function deltaHtml(cur, prev, ky) {
+    if (cur == null || prev == null || !ky) return '';
+    var d = cur / prev - 1;
+    var cls = d > 0.005 ? 'delta-up' : d < -0.005 ? 'delta-down' : '';
+    var arrow = d > 0.005 ? '▲' : d < -0.005 ? '▼' : '■';
+    return '<span class="' + cls + '">' + arrow + ' ' + pct(d) + '</span> so với ' + kyLabel(prevKy(ky));
+  }
+  function renderKpis() {
+    var ky = S.ky, pk = prevKy(ky);
+    var q = routeL100(ky, 'QNG'), qp = routeL100(pk, 'QNG');
+    var d = routeL100(ky, 'DL'), dp = routeL100(pk, 'DL');
+    var t = truckL100(ky), tp = truckL100(pk);
+    var fills = RAW.fills.filter(function (f) { return inScope(f, ky) && (!S.nhom || f.nhom === S.nhom); });
+    var lit = fills.reduce(function (a, f) { return a + f.lit; }, 0);
+    var segs = RAW.segments.filter(function (s) { return inScope(s, ky) && (!S.nhom || s.nhom === S.nhom); });
+    var ok = segs.filter(function (s) { return s.ok; }).length;
+    var coach = fills.filter(function (f) { return f.nhom === 'XE KHÁCH'; });
+    var withOdo = coach.filter(function (f) { return f.hasOdo; }).length;
+    var tiles = [
+      ['Xe khách HCM – Quảng Ngãi', q.v, 'L/100km', (q.perLeg ? '≈ ' + nf(q.perLeg) + ' lít/chiều · ' : '') + q.n + ' chặng<br>' + deltaHtml(q.v, qp.v, ky)],
+      ['Xe khách HCM – Đà Lạt', d.v, 'L/100km', (d.perLeg ? '≈ ' + nf(d.perLeg) + ' lít/vòng · ' : '') + d.n + ' vòng<br>' + deltaHtml(d.v, dp.v, ky)],
+      ['Xe tải HCM – QNG (ước tính)', t.v, 'L/100km', (t.perLeg ? '≈ ' + nf(t.perLeg) + ' lít/chiều · ' : '') + t.n + ' lần đổ<br>' + deltaHtml(t.v, tp.v, ky)],
+      ['Tổng dầu đã đổ', lit, 'lít', fills.length + ' lần đổ (theo bộ lọc)'],
+      ['Chất lượng dữ liệu', segs.length ? ok / segs.length : null, '', ok + '/' + segs.length + ' chặng dùng được<br>' +
+        (coach.length ? Math.round(withOdo / coach.length * 100) + '% lần đổ xe khách có ODO' : '')]
+    ];
+    $('kpis').innerHTML = tiles.map(function (t, i) {
+      var v = t[1] == null ? '–' : i === 4 ? Math.round(t[1] * 100) + '<small>%</small>' : i === 3 ? nf(t[1]) + '<small>lít</small>' : nf(t[1], 1) + '<small>' + t[2] + '</small>';
+      return '<div class="kpi"><div class="lab">' + t[0] + '</div><div class="val">' + v + '</div><div class="foot">' + t[3] + '</div></div>';
+    }).join('');
+  }
+
+  var COLS = {
+    xe: [
+      ['key', 'Biển số'], ['cfg', 'Cấu hình'], ['grp', 'Tuyến chính'], ['fills', 'Lần đổ', 1], ['n', 'Chặng / lần tính', 1],
+      ['km', 'Km', 1], ['lit', 'Lít', 1], ['l100', 'L/100km', 1], ['bench', 'Chuẩn', 1], ['dev', 'Lệch so với chuẩn'], ['status', 'Đánh giá'], ['otherList', 'Tài xế đã lái']
+    ],
+    tx: [
+      ['key', 'Tài xế'], ['nhom', 'Loại xe'], ['grp', 'Tuyến chính'], ['otherList', 'Xe đã lái'], ['n', 'Chặng / lần tính', 1],
+      ['km', 'Km', 1], ['lit', 'Lít', 1], ['l100', 'L/100km', 1], ['bench', 'Chuẩn', 1], ['dev', 'Lệch so với chuẩn'], ['status', 'Đánh giá'], ['noOdoPct', 'Đổ thiếu ODO', 1]
+    ]
+  };
+  var STATUS = {
+    bad: ['st-bad', '▲ Cao – kiểm tra'], good: ['st-good', '✓ Tiết kiệm'], norm: ['st-norm', '• Bình thường'], na: ['st-na', 'Chưa đủ dữ liệu']
+  };
+  var STATUS_ORDER = { bad: 3, norm: 2, good: 1, na: 0 };
+
+  function renderTable(mode, rows) {
+    var sk = S.sort[mode][0], sd = S.sort[mode][1];
+    rows.sort(function (a, b) {
+      var x = a[sk], y = b[sk];
+      if (sk === 'status') { x = STATUS_ORDER[x]; y = STATUS_ORDER[y]; }
+      if (sk === 'otherList') { x = x.join(); y = y.join(); }
+      if (x == null && y == null) return 0;
+      if (x == null) return 1; if (y == null) return -1;
+      return (typeof x === 'string' ? x.localeCompare(y, 'vi') : x - y) * sd;
+    });
+    var nBad = rows.filter(function (r) { return r.status === 'bad'; }).length;
+    var nGood = rows.filter(function (r) { return r.status === 'good'; }).length;
+    var title = mode === 'xe' ? 'Xếp hạng theo xe' : 'Xếp hạng theo tài xế';
+    var h = '<div class="panel"><div class="panel-h"><h2>' + title + ' · ' + kyLabel(S.ky) +
+      ' <span class="muted" style="font-weight:400">— ' + rows.length + ' ' + (mode === 'xe' ? 'xe' : 'tài xế') + ', ' + nBad + ' cần kiểm tra, ' + nGood + ' tiết kiệm</span></h2>' +
+      '<div class="legend"><span><i style="background:var(--div-neg)"></i>Thấp hơn chuẩn (tốt)</span><span><i style="background:var(--div-pos)"></i>Cao hơn chuẩn</span>' +
+      '<span>Ngưỡng cảnh báo ±' + Math.round(RAW.config.ALERT_PCT * 100) + '%</span></div></div>';
+    if (!rows.length) { $('view').innerHTML = h + '<div class="empty">Không có dữ liệu cho bộ lọc này.</div></div>'; return; }
+    h += '<div class="tbl-wrap"><table><thead><tr>' + COLS[mode].map(function (c) {
+      var arr = c[0] === sk ? (sd > 0 ? '▲' : '▼') : '';
+      return '<th data-k="' + c[0] + '" class="' + (c[2] ? 'num' : '') + '">' + c[1] + '<span class="arr">' + arr + '</span></th>';
+    }).join('') + '</tr></thead><tbody>';
+    rows.forEach(function (r) {
+      var id = mode === 'xe' ? r.key : r.id;
+      var sel = S.sel && S.sel.mode === mode && S.sel.id === id;
+      h += '<tr class="click' + (sel ? ' sel' : '') + '" data-id="' + esc(id) + '">';
+      COLS[mode].forEach(function (c) { h += cell(c[0], r, mode); });
+      h += '</tr>';
+      if (sel) h += '<tr><td colspan="' + COLS[mode].length + '" style="padding:0">' + detail(r, mode) + '</td></tr>';
+    });
+    h += '</tbody></table></div></div>';
+    $('view').innerHTML = h;
+  }
+
+  function cell(k, r, mode) {
+    switch (k) {
+      case 'key': return '<td class="plate">' + esc(r.key) + '</td>';
+      case 'cfg': return '<td><span class="chip">' + esc(r.cfg) + '</span></td>';
+      case 'nhom': return '<td><span class="chip">' + (r.nhom === 'XE TẢI' ? 'Xe tải' : 'Xe khách') + '</span></td>';
+      case 'grp': return '<td>' + (grpLabel[r.grp] || '–') + '</td>';
+      case 'fills': return '<td class="num">' + r.fills + '</td>';
+      case 'n': return '<td class="num">' + r.n + (r.est ? ' <span class="muted">lần đổ</span>' : r.bad ? ' <span class="muted">(+' + r.bad + ' loại)</span>' : '') + '</td>';
+      case 'km': return '<td class="num">' + (r.est ? '<span class="muted">—</span>' : nf(r.km)) + '</td>';
+      case 'lit': return '<td class="num">' + nf(r.est ? r.tLit : r.lit) + '</td>';
+      case 'l100': return '<td class="num"><b>' + nf(r.l100, 1) + '</b>' + (r.est ? '<span class="muted">*</span>' : '') + '</td>';
+      case 'bench': return '<td class="num muted">' + nf(r.bench, 1) + '</td>';
+      case 'dev': return '<td>' + devBar(r) + '</td>';
+      case 'status': var s = STATUS[r.status]; return '<td><span class="status ' + s[0] + '">' + s[1] + '</span></td>';
+      case 'otherList': return '<td class="muted" style="white-space:normal;min-width:180px">' + esc(r.otherList.slice(0, 3).join(', ')) + (r.otherList.length > 3 ? ' +' + (r.otherList.length - 3) : '') + '</td>';
+      case 'noOdoPct': return '<td class="num' + (r.noOdoPct > 0.3 ? ' ok-n' : ' muted') + '">' + (r.noOdoPct == null ? '–' : r.noOdo + '/' + r.fills + ' (' + Math.round(r.noOdoPct * 100) + '%)') + '</td>';
+    }
+    return '<td></td>';
+  }
+
+  function devBar(r) {
+    if (r.dev == null) return '<span class="muted">' + (r.n ? 'cần ≥ ' + RAW.config.MIN_SEGMENTS_RANK + ' ' + (r.est ? 'lần đổ' : 'chặng') : '–') + '</span>';
+    var w = Math.min(Math.abs(r.dev) / 0.20, 1) * 50;
+    var tip = esc(r.key) + '<br>Thực tế ' + nf(r.l100, 1) + ' · Chuẩn ' + nf(r.bench, 1) + ' L/100km<br>Lệch ' + pct(r.dev) +
+      (r.est ? '<br>(xe tải – ước tính)' : '<br>' + nf(r.km) + ' km · ' + r.n + ' chặng hợp lệ');
+    return '<div class="dev" data-tip="' + tip.replace(/"/g, '&quot;') + '"><div class="track"><div class="mid"></div>' +
+      '<div class="bar ' + (r.dev >= 0 ? 'pos' : 'neg') + '" style="width:' + Math.max(w, 1.5) + '%"></div></div><span class="pct">' + pct(r.dev) + '</span></div>';
+  }
+
+  function detail(r, mode) {
+    var h = '<div class="detail">';
+    if (r.est) {
+      var fl = RAW.fills.filter(function (f) {
+        return inScope(f, S.ky) && f.nhom === 'XE TẢI' && (mode === 'xe' ? f.bs === r.key : f.tx === r.key);
+      }).sort(function (a, b) { return a.ts < b.ts ? -1 : 1; });
+      h += '<h3>Các lần đổ – ' + esc(r.key) + '</h3><div class="tbl-wrap"><table><thead><tr><th>Ngày giờ</th><th>' + (mode === 'xe' ? 'Tài xế' : 'Xe') +
+        '</th><th>Tuyến</th><th>Cửa hàng</th><th class="num">Lít</th><th>Kiểu</th><th class="num">Dòng gốc</th></tr></thead><tbody>' +
+        fl.map(function (f) {
+          return '<tr><td>' + fmtDT(f.ts) + '</td><td>' + esc(mode === 'xe' ? f.tx : f.bs) + '</td><td>' + esc(f.tuyen) + '</td><td>' + (f.ch || '–') +
+            '</td><td class="num">' + nf(f.lit, 1) + '</td><td>' + (f.full ? 'Đổ đầy' : '<span class="muted">Châm giữa đường</span>') + '</td><td class="num muted">' + f.row + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+    } else {
+      var sg = r.segs.slice().sort(function (a, b) { return a.to < b.to ? -1 : 1; });
+      h += '<h3>Chi tiết chặng – ' + esc(r.key) + ' (' + sg.length + ' chặng)</h3><div class="tbl-wrap"><table><thead><tr><th>Từ</th><th>Đến</th><th>' +
+        (mode === 'xe' ? 'Tài xế' : 'Xe') + '</th><th>Chiều</th><th class="num">Km</th><th class="num">Lít</th><th class="num">L/100km</th><th>Trạng thái</th><th class="num">Dòng gốc</th></tr></thead><tbody>' +
+        sg.map(function (s) {
+          return '<tr><td>' + fmtDT(s.from) + '</td><td>' + fmtDT(s.to) + '</td><td>' + esc(mode === 'xe' ? s.tx : s.bs) + '</td><td>' + esc(s.chieu) +
+            '</td><td class="num">' + nf(s.km) + '</td><td class="num">' + nf(s.lit, 1) + '</td><td class="num"><b>' + nf(s.l100, 1) + '</b></td><td>' +
+            (s.ok ? '<span class="ok-y">✓ Hợp lệ</span>' : '<span class="ok-n">✕ ' + esc(s.reason) + '</span>') + '</td><td class="num muted">' + s.rowFrom + '→' + s.rowTo + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+      if (!sg.length) h += '<div class="empty">Chưa có chặng nào (thiếu ODO).</div>';
+    }
+    return h + '</div>';
+  }
+
+  function renderQuality() {
+    var ky = S.ky;
+    var fills = RAW.fills.filter(function (f) { return inScope(f, ky) && f.nhom === 'XE KHÁCH'; });
+    var by = {};
+    fills.forEach(function (f) { by[f.tx] = by[f.tx] || { n: 0, miss: 0 }; by[f.tx].n++; if (!f.hasOdo) by[f.tx].miss++; });
+    var drv = Object.keys(by).map(function (k) { return { tx: k, n: by[k].n, miss: by[k].miss, p: by[k].miss / by[k].n }; })
+      .filter(function (d) { return d.miss > 0 && matchQ(d.tx); }).sort(function (a, b) { return b.miss - a.miss || b.p - a.p; });
+    var bad = RAW.segments.filter(function (s) { return !s.ok && inScope(s, ky) && (!S.nhom || s.nhom === S.nhom) && matchQ(s.bs, s.tx); })
+      .sort(function (a, b) { return a.to < b.to ? 1 : -1; });
+    var rowsKy = {};
+    RAW.fills.forEach(function (f) { rowsKy[f.row] = f.ky; });
+    var iss = RAW.issues.filter(function (i) { return (!ky || !rowsKy[i.row] || rowsKy[i.row] === ky) && matchQ(i.bs, i.msg); });
+
+    var h = '<div class="qgrid">';
+    h += '<div class="panel"><div class="panel-h"><h2>Tài xế đổ dầu không chụp ODO (xe khách)</h2></div>' +
+      (drv.length ? '<div class="tbl-wrap"><table><thead><tr><th>Tài xế</th><th class="num">Thiếu ODO</th><th class="num">Tổng lần đổ</th><th>Tỉ lệ</th></tr></thead><tbody>' +
+      drv.map(function (d) {
+        return '<tr><td>' + esc(d.tx) + '</td><td class="num"><b>' + d.miss + '</b></td><td class="num">' + d.n + '</td><td><div class="dev"><div class="track" style="width:110px">' +
+          '<div class="bar pos" style="left:0;width:' + Math.round(d.p * 100) + '%;border-radius:0 4px 4px 0"></div></div><span class="pct">' + Math.round(d.p * 100) + '%</span></div></td></tr>';
+      }).join('') + '</tbody></table></div>' : '<div class="empty">Không có.</div>') + '</div>';
+    h += '<div class="panel"><div class="panel-h"><h2>Chặng bị loại (' + bad.length + ')</h2></div>' +
+      (bad.length ? '<div class="tbl-wrap"><table><thead><tr><th>Đến</th><th>Xe</th><th>Tài xế</th><th class="num">Km</th><th class="num">L/100</th><th>Lý do</th></tr></thead><tbody>' +
+      bad.map(function (s) {
+        return '<tr><td>' + fmtD(s.to) + '</td><td class="plate">' + esc(s.bs) + '</td><td>' + esc(s.tx) + '</td><td class="num">' + nf(s.km) + '</td><td class="num">' + nf(s.l100, 1) +
+          '</td><td class="muted" style="white-space:normal">' + esc(s.reason) + '</td></tr>';
+      }).join('') + '</tbody></table></div>' : '<div class="empty">Không có.</div>') + '</div>';
+    h += '</div><div class="panel" style="margin-top:14px"><div class="panel-h"><h2>Dòng tự động sửa / loại (' + iss.length + ')</h2>' +
+      '<span class="muted" style="font-size:12px">Sửa tay: thêm dòng vào tab HIEU_CHINH (Dòng gốc | Biển số đúng | ODO đúng | Bỏ dòng | Ghi chú)</span></div>' +
+      (iss.length ? '<div class="tbl-wrap"><table><thead><tr><th class="num">Dòng gốc</th><th>Biển số</th><th>Nội dung</th></tr></thead><tbody>' +
+      iss.map(function (i) { return '<tr><td class="num">' + i.row + '</td><td class="plate">' + esc(i.bs) + '</td><td style="white-space:normal">' + esc(i.msg) + '</td></tr>'; }).join('') +
+      '</tbody></table></div>' : '<div class="empty">Không có.</div>') + '</div>';
+    $('view').innerHTML = h;
+  }
+
+  // ---------------- events ----------------
+  $('fKy').onchange = function () { S.ky = this.value; S.sel = null; render(); };
+  $('fGrp').onchange = function () { S.grp = this.value; S.sel = null; render(); };
+  $('fQ').oninput = function () { S.q = this.value.trim(); render(); };
+  $('fNhom').onclick = function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    S.nhom = b.dataset.v; S.sel = null;
+    this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    render();
+  };
+  $('tabs').onclick = function (e) { var b = e.target.closest('button'); if (b) { S.tab = b.dataset.t; S.sel = null; render(); } };
+  $('reload').onclick = load;
+  $('view').onclick = function (e) {
+    var th = e.target.closest('th[data-k]');
+    if (th && (S.tab === 'xe' || S.tab === 'tx')) {
+      var k = th.dataset.k, cur = S.sort[S.tab];
+      S.sort[S.tab] = [k, cur[0] === k ? -cur[1] : (k === 'key' || k === 'grp' || k === 'cfg' ? 1 : -1)];
+      render(); return;
+    }
+    var tr = e.target.closest('tr.click');
+    if (tr) {
+      var id = tr.dataset.id;
+      S.sel = S.sel && S.sel.id === id && S.sel.mode === S.tab ? null : { mode: S.tab, id: id };
+      render();
+    }
+  };
+  var tip = $('tip');
+  document.addEventListener('mousemove', function (e) {
+    var t = e.target.closest && e.target.closest('[data-tip]');
+    if (!t) { tip.style.display = 'none'; return; }
+    tip.innerHTML = t.getAttribute('data-tip');
+    tip.style.display = 'block';
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + 290 > window.innerWidth) x = e.clientX - 290;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
