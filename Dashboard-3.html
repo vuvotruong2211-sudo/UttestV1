@@ -90,6 +90,7 @@ a.lnk:hover{text-decoration:underline}
   </div>
   <div class="sp"></div>
   <div class="sub" id="stamp"></div>
+  <button class="btn" onclick="openPrint()">🖨️ In bảng TT</button>
   <button class="btn" onclick="reload()">⟳ Tải lại dữ liệu</button>
 </header>
 
@@ -232,6 +233,11 @@ function load(){
   else $('loadmsg').textContent='Không tìm thấy dữ liệu.';
 }
 function reload(){load();}
+function openPrint(){
+  if(window.google&&google.script&&google.script.run){
+    google.script.run.withSuccessHandler(u=>{if(u)window.open(u+'?page=in','_blank');else alert('Mở từ menu Google Sheet: 🚌 Dashboard Lương → 🖨️ In bảng thanh toán lương');}).getWebAppUrl();
+  }else alert('Bản xem trước: mở file PrintTT_preview.html để xem trang in.');
+}
 
 function init(d){
   RAW=d;CFG=d.cfg;TODAY=d.today;
