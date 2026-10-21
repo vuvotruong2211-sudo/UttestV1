@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<title>In bảng thanh toán lương</title>
+<style id="printcss">
+@page{size:A4 landscape;margin:10mm 12mm}
+.page{font-family:'Times New Roman',Times,serif;color:#000;background:#fff;width:269mm;min-height:180mm;margin:0 auto;padding:5mm 4mm;box-sizing:border-box;font-size:13.5pt}
+.page .co{line-height:1.3;margin-bottom:6mm}
+.page .co b{font-size:13.5pt;text-transform:uppercase}
+.page h2{text-align:center;font-size:16pt;margin:0;font-weight:bold;letter-spacing:.3px}
+.page .ngay{text-align:center;margin:1mm 0 4mm;font-size:13.5pt}
+.page table{width:100%;border-collapse:collapse;table-layout:auto}
+.page th,.page td{border:1px solid #000;padding:1.3mm 1.6mm;font-size:12.5pt}
+.page th{font-weight:bold;text-align:center;vertical-align:middle}
+.page tr.code td{text-align:center;font-weight:normal;padding:1mm}
+.page td.c{text-align:center}.page td.r{text-align:right;white-space:nowrap}
+.page tr.tong td{font-weight:bold}
+.page .chu{margin-top:3mm;font-style:italic;font-size:12.5pt}
+.page .ky{display:flex;justify-content:space-between;margin-top:4mm;text-align:center}
+.page .ky>div{width:45%}
+.page .ky .t{font-weight:bold}
+.page .ky .s{font-style:italic}
+.page .ky .ten{margin-top:18mm;font-weight:bold}
+.page .ky .ngayky{font-style:normal;margin-bottom:1mm}
+[contenteditable]:hover{outline:1px dashed #F18F01}
+.page .ky{break-inside:avoid;page-break-inside:avoid}
+.page tr{break-inside:avoid}
+@media print{.no-print{display:none !important}html,body{margin:0;background:#fff}.wrap{padding:0 !important}
+  .page{width:auto;min-height:0;padding:0;margin:0;box-shadow:none !important}[contenteditable]:hover{outline:none}}
+</style>
+<style>
+body{margin:0;background:#E9EDF2;font-family:system-ui,'Segoe UI',sans-serif;font-size:13px}
+.bar{position:sticky;top:0;background:#1F3A5F;color:#fff;padding:10px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;z-index:5}
+.bar select,.bar input{font:inherit;padding:6px 8px;border-radius:6px;border:none}
+.bar select{min-width:300px}
+.bar button{font:inherit;font-weight:600;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;background:#F18F01;color:#fff}
+.bar button.g{background:rgba(255,255,255,.15)}
+.bar label{display:flex;gap:5px;align-items:center;font-size:12px}
+.bar .msg{font-size:12px;opacity:.9}
+.bar a{color:#FFD58A}
+.wrap{padding:16px}
+.wrap .page{box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.hint{color:#6B7785;font-size:11.5px;text-align:center;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="bar no-print">
+  <b>🖨️ In bảng thanh toán</b>
+  <select id="sel"><option>Đang tải danh sách ngày…</option></select>
+  <label><input type="checkbox" id="thue"> Hiện cột thuế</label>
+  <label><input type="checkbox" id="chu" checked> Dòng bằng chữ</label>
+  <label>Cỡ chữ <input type="number" id="fs" value="100" min="70" max="130" step="5" style="width:60px">%</label>
+  <button onclick="window.print()">🖨️ In</button>
+  <button class="g" onclick="savePdf()">📄 Lưu PDF vào Drive</button>
+  <span class="msg" id="msg"></span>
+</div>
+<div class="wrap">
+  <div class="hint no-print">💡 Bấm vào tên người ký / ngày để sửa trực tiếp trước khi in. Khi in chọn khổ A4 – ngang, tắt "Đầu trang và chân trang".</div>
+  <div id="page" class="page"></div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+let CUR=null,CFG={};
+const fM=v=>Math.round(+v||0).toLocaleString('vi-VN');
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const run=(fn,...a)=>new Promise((ok,er)=>{
+  if(window.google&&google.script&&google.script.run){google.script.run.withSuccessHandler(ok).withFailureHandler(er)[fn](...a);}
+  else{const M=window.__PRINT__;ok(fn==='getPrintDates'?M.dates:(fn==='getPrintData'?M.byDate[a[0]]:{url:'#'}));}
+});
+
+/* ---- Đọc số thành chữ ---- */
+const DS=['không','một','hai','ba','bốn','năm','sáu','bảy','tám','chín'];
+function doc3(n,full){const h=Math.floor(n/100),t=Math.floor(n%100/10),u=n%10,p=[];
+  if(full||h>0)p.push(DS[h]+' trăm');
+  if(t>1){p.push(DS[t]+' mươi');if(u===1)p.push('mốt');else if(u===5)p.push('lăm');else if(u>0)p.push(DS[u]);}
+  else if(t===1){p.push('mười');if(u===5)p.push('lăm');else if(u>0)p.push(DS[u]);}
+  else if(u>0){if(full||h>0)p.push('linh');p.push(DS[u]);}
+  return p.join(' ');}
+function docSo(n){n=Math.round(Math.abs(+n||0));if(!n)return 'Không đồng';
+  const U=['',' nghìn',' triệu',' tỷ'],g=[];while(n>0){g.push(n%1000);n=Math.floor(n/1000);}
+  const out=[];for(let i=g.length-1;i>=0;i--){if(g[i]===0){if(i%3===0&&i>0&&out.length)out.push('tỷ');continue;}
+    out.push(doc3(g[i],i<g.length-1)+U[i%3===0&&i>0?3:i%3]);}
+  const s=out.join(' ').replace(/\s+/g,' ').trim();return s.charAt(0).toUpperCase()+s.slice(1)+' đồng';}
+
+async function init(){
+  try{
+    const r=await run('getPrintDates');CFG=r.cfg||{};
+    if(!r.dates.length){$('sel').innerHTML='<option>Chưa có dữ liệu</option>';return;}
+    $('sel').innerHTML=r.dates.map(d=>`<option value="${d.d}">${d.label} — ${d.n} người — ${fM(d.total)} đ</option>`).join('');
+    ['sel','thue','chu','fs'].forEach(i=>$(i).addEventListener('change',load));
+    load();
+  }catch(e){$('msg').textContent='Lỗi: '+e.message;}
+}
+async function load(){
+  $('msg').textContent='Đang tải…';
+  CUR=await run('getPrintData',$('sel').value);
+  $('msg').textContent='';
+  if(CUR.rows.some(r=>+r.thue))$('thue').checked=true;
+  draw();
+}
+function draw(){
+  const d=CUR,thue=$('thue').checked,[y,m,dd]=d.date.split('-');
+  const ngay=`Ngày ${+dd} tháng ${m} năm ${y}`;
+  const tot=d.rows.reduce((s,r)=>s+(+r.tn||0),0);
+  let h=`<div class="co"><b contenteditable>${esc(CFG.company)}</b><br><span contenteditable>${esc(CFG.address)}</span></div>
+  <h2>BẢNG THANH TOÁN TIỀN LƯƠNG TÀI XẾ</h2><div class="ngay" contenteditable>${ngay}</div>
+  <table><thead><tr><th>STT</th><th>Họ và Tên</th><th>Biển số xe</th><th>Chức vụ</th><th>Công</th><th>Tiền công<br>theo ngày</th><th>Thành tiền</th>
+  ${thue?'<th>Thuế<br>khấu trừ</th>':''}<th>Thực nhận</th><th colspan="2">Thông tin nhận tiền</th></tr>
+  <tr class="code"><td>A</td><td>B</td><td>C</td><td>D</td><td>1</td><td>2</td><td>3</td>${thue?'<td>4</td>':''}<td>5=3-4</td><td><b>${esc(d.h1)}</b></td><td><b>${esc(d.h2)}</b></td></tr></thead><tbody>`;
+  d.rows.forEach((r,i)=>{h+=`<tr><td class="c">${i+1}</td><td>${esc(r.ten)}</td><td class="c">${esc(r.bien)}</td><td class="c">${esc(r.cv)}</td>
+    <td class="c">${esc(r.cong)}</td><td class="r">${fM(r.dg)}</td><td class="r">${fM(r.tt)}</td>${thue?`<td class="r">${fM(r.thue)}</td>`:''}
+    <td class="r">${fM(r.tn)}</td><td class="c">${esc(r.g1)}</td><td class="c">${esc(r.g2)}</td></tr>`;});
+  h+=`<tr class="tong"><td></td><td class="c">Cộng</td><td></td><td></td><td></td><td></td><td></td>${thue?'<td></td>':''}<td class="r">${fM(tot)}</td><td></td><td></td></tr></tbody></table>`;
+  if($('chu').checked)h+=`<div class="chu">Số tiền bằng chữ: <span contenteditable>${docSo(tot)}</span>.</div>`;
+  h+=`<div class="ky"><div><div class="ngayky">&nbsp;</div><div class="t">Người đề nghị thanh toán</div><div class="s">(Ký, họ tên)</div><div class="ten" contenteditable>${esc(CFG.nguoiDN)}</div></div>
+    <div><div class="ngayky" contenteditable>${ngay}</div><div class="t">Người duyệt</div><div class="s">(Ký, họ tên)</div><div class="ten" contenteditable>${esc(CFG.nguoiDuyet)}</div></div></div>`;
+  const p=$('page');p.innerHTML=h;p.style.fontSize=(13.5*(+$('fs').value||100)/100)+'pt';
+  p.querySelectorAll('th,td,.chu').forEach(x=>x.style.fontSize=(12.5*(+$('fs').value||100)/100)+'pt');
+}
+async function savePdf(){
+  $('msg').textContent='Đang tạo PDF…';
+  const html='<html><head><meta charset="utf-8"><style>'+$('printcss').textContent+'</style></head><body>'+$('page').outerHTML+'</body></html>';
+  try{const r=await run('savePrintPdf',html,'BangThanhToanLuong_'+CUR.date);
+    $('msg').innerHTML='✅ Đã lưu: <a href="'+r.url+'" target="_blank">Mở PDF</a>';}catch(e){$('msg').textContent='Lỗi: '+e.message;}
+}
+init();
+</script>
+</body>
+</html>
