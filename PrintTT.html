@@ -17,6 +17,8 @@
 .page tr.code td{text-align:center;font-weight:normal;padding:1mm}
 .page td.c{text-align:center}.page td.r{text-align:right;white-space:nowrap}
 .page tr.tong td{font-weight:bold}
+.page tr.nhom td{font-weight:bold;font-style:italic;background:#fff}
+.page tr.sub td{font-weight:bold;font-style:italic}
 .page .chu{margin-top:3mm;font-style:italic;font-size:12.5pt}
 .page .ky{display:flex;justify-content:space-between;margin-top:4mm;text-align:center}
 .page .ky>div{width:45%}
@@ -43,12 +45,29 @@ body{margin:0;background:#E9EDF2;font-family:system-ui,'Segoe UI',sans-serif;fon
 .wrap{padding:16px}
 .wrap .page{box-shadow:0 2px 10px rgba(0,0,0,.15)}
 .hint{color:#6B7785;font-size:11.5px;text-align:center;margin:8px 0}
+.bar .type{background:#fff;color:#1F3A5F}
+.modal{position:fixed;inset:0;background:rgba(15,30,50,.55);display:none;align-items:center;justify-content:center;z-index:50}
+.modal.on{display:flex}
+.mbox{background:#fff;border-radius:14px;padding:22px 24px;width:min(640px,92vw);box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.mbox h3{margin:0 0 4px;color:#1F3A5F;font-size:17px}
+.mbox .sub{color:#6B7785;font-size:12.5px;margin-bottom:16px}
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.opt{border:2px solid #E1E7EF;border-radius:12px;padding:16px 10px;text-align:center;cursor:pointer;background:#fff;font:inherit;transition:.15s}
+.opt:hover{border-color:#F18F01;background:#FFF8EC}
+.opt.on{border-color:#F18F01;background:#FFF3E0}
+.opt .ic{font-size:30px}
+.opt .t{font-weight:700;color:#1F3A5F;margin-top:6px;font-size:14px}
+.opt .n{color:#6B7785;font-size:12px;margin-top:4px;line-height:1.4}
+.opt[disabled]{opacity:.4;cursor:not-allowed}
+.mfoot{margin-top:14px;font-size:12px;color:#B7791F;min-height:16px}
+@media(max-width:560px){.opts{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="bar no-print">
   <b>🖨️ In bảng thanh toán</b>
   <select id="sel"><option>Đang tải danh sách ngày…</option></select>
+  <button class="type" id="btnType" onclick="openModal()">🚌 Loại: Cả 2 ▾</button>
   <label><input type="checkbox" id="thue"> Hiện cột thuế</label>
   <label><input type="checkbox" id="chu" checked> Dòng bằng chữ</label>
   <label>Cỡ chữ <input type="number" id="fs" value="100" min="70" max="130" step="5" style="width:60px">%</label>
@@ -56,13 +75,26 @@ body{margin:0;background:#E9EDF2;font-family:system-ui,'Segoe UI',sans-serif;fon
   <button class="g" onclick="savePdf()">📄 Lưu PDF vào Drive</button>
   <span class="msg" id="msg"></span>
 </div>
+<div class="modal no-print" id="modal">
+  <div class="mbox">
+    <h3>Chọn loại bảng lương cần in</h3>
+    <div class="sub" id="mSub">Ngày …</div>
+    <div class="opts">
+      <button class="opt" data-t="Xe khách"><div class="ic">🚌</div><div class="t">Xe khách</div><div class="n"></div></button>
+      <button class="opt" data-t="Xe tải"><div class="ic">🚚</div><div class="t">Xe tải</div><div class="n"></div></button>
+      <button class="opt" data-t="Cả 2"><div class="ic">📋</div><div class="t">Cả 2</div><div class="n"></div></button>
+    </div>
+    <div class="mfoot" id="mFoot"></div>
+  </div>
+</div>
 <div class="wrap">
   <div class="hint no-print">💡 Bấm vào tên người ký / ngày để sửa trực tiếp trước khi in. Khi in chọn khổ A4 – ngang, tắt "Đầu trang và chân trang".</div>
   <div id="page" class="page"></div>
 </div>
 <script>
 const $=id=>document.getElementById(id);
-let CUR=null,CFG={};
+let CUR=null,CFG={},DATES=[],TYPE=null;
+const TYPES=['Xe khách','Xe tải','Chưa phân loại'];
 const fM=v=>Math.round(+v||0).toLocaleString('vi-VN');
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const run=(fn,...a)=>new Promise((ok,er)=>{
@@ -88,31 +120,71 @@ async function init(){
   try{
     const r=await run('getPrintDates');CFG=r.cfg||{};
     if(!r.dates.length){$('sel').innerHTML='<option>Chưa có dữ liệu</option>';return;}
-    $('sel').innerHTML=r.dates.map(d=>`<option value="${d.d}">${d.label} — ${d.n} người — ${fM(d.total)} đ</option>`).join('');
-    ['sel','thue','chu','fs'].forEach(i=>$(i).addEventListener('change',load));
-    load();
+    DATES=r.dates;fillDates();
+    $('sel').addEventListener('change',()=>{load();});
+    ['thue','chu','fs'].forEach(i=>$(i).addEventListener('change',draw));
+    document.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(b.disabled)return;setType(b.dataset.t);});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&TYPE)$('modal').classList.remove('on');});
+    await load();
+    openModal();
   }catch(e){$('msg').textContent='Lỗi: '+e.message;}
+}
+const cnt=(d,t)=>{if(!d)return{n:0,total:0};if(t==='Cả 2')return{n:d.n,total:d.total};return (d.by||{})[t]||{n:0,total:0};};
+function fillDates(){
+  const cur=$('sel').value,t=TYPE||'Cả 2';
+  $('sel').innerHTML=DATES.map(d=>{const c=cnt(d,t);return `<option value="${d.d}" ${c.n?'':'style="color:#aaa"'}>${d.label} — ${c.n} người — ${fM(c.total)} đ</option>`;}).join('');
+  if(cur&&DATES.some(d=>d.d===cur))$('sel').value=cur;
+}
+function openModal(){
+  const d=DATES.find(x=>x.d===$('sel').value);
+  $('mSub').textContent='Ngày thanh toán '+(d?d.label:'')+' — chọn bảng cần in để trình ký';
+  document.querySelectorAll('.opt').forEach(b=>{const c=cnt(d,b.dataset.t);
+    b.querySelector('.n').innerHTML=c.n?`${c.n} người<br><b>${fM(c.total)} đ</b>`:'Không có dòng nào';
+    b.disabled=!c.n;b.classList.toggle('on',b.dataset.t===TYPE);});
+  const u=cnt(d,'Chưa phân loại').n;
+  $('mFoot').textContent=u?`⚠ Có ${u} dòng chưa ghi PHÂN LOẠI XE – chỉ hiện khi chọn "Cả 2". Nên bổ sung ở sheet THEO DÕI THANH TOÁN.`:'';
+  $('modal').classList.add('on');
+}
+function setType(t){
+  TYPE=t;$('btnType').textContent=(t==='Xe tải'?'🚚':(t==='Xe khách'?'🚌':'📋'))+' Loại: '+t+' ▾';
+  $('modal').classList.remove('on');fillDates();draw();
 }
 async function load(){
   $('msg').textContent='Đang tải…';
   CUR=await run('getPrintData',$('sel').value);
   $('msg').textContent='';
   if(CUR.rows.some(r=>+r.thue))$('thue').checked=true;
-  draw();
+  if(TYPE)draw();
 }
 function draw(){
-  const d=CUR,thue=$('thue').checked,[y,m,dd]=d.date.split('-');
+  if(!CUR)return;
+  const d=CUR,thue=$('thue').checked,[y,m,dd]=d.date.split('-'),t=TYPE||'Cả 2';
   const ngay=`Ngày ${+dd} tháng ${m} năm ${y}`;
-  const tot=d.rows.reduce((s,r)=>s+(+r.tn||0),0);
+  const rows=t==='Cả 2'?d.rows:d.rows.filter(r=>r.lx===t);
+  const groups=t==='Cả 2'?TYPES.map(g=>({g,rows:rows.filter(r=>r.lx===g)})).filter(x=>x.rows.length):[{g:t,rows}];
+  const grouped=groups.length>1;
+  const tot=rows.reduce((s,r)=>s+(+r.tn||0),0);
+  const ncol=thue?11:10;
+  const title='BẢNG THANH TOÁN TIỀN LƯƠNG TÀI XẾ'+(t!=='Cả 2'?' – '+t.toUpperCase():'');
+  const unc=d.rows.filter(r=>r.lx==='Chưa phân loại').length;
+  $('msg').textContent=(t!=='Cả 2'&&unc)?`⚠ ${unc} dòng chưa phân loại xe không được in ở bảng này`:'';
   let h=`<div class="co"><b contenteditable>${esc(CFG.company)}</b><br><span contenteditable>${esc(CFG.address)}</span></div>
-  <h2>BẢNG THANH TOÁN TIỀN LƯƠNG TÀI XẾ</h2><div class="ngay" contenteditable>${ngay}</div>
+  <h2 contenteditable>${title}</h2><div class="ngay" contenteditable>${ngay}</div>
   <table><thead><tr><th>STT</th><th>Họ và Tên</th><th>Biển số xe</th><th>Chức vụ</th><th>Công</th><th>Tiền công<br>theo ngày</th><th>Thành tiền</th>
   ${thue?'<th>Thuế<br>khấu trừ</th>':''}<th>Thực nhận</th><th colspan="2">Thông tin nhận tiền</th></tr>
   <tr class="code"><td>A</td><td>B</td><td>C</td><td>D</td><td>1</td><td>2</td><td>3</td>${thue?'<td>4</td>':''}<td>5=3-4</td><td><b>${esc(d.h1)}</b></td><td><b>${esc(d.h2)}</b></td></tr></thead><tbody>`;
-  d.rows.forEach((r,i)=>{h+=`<tr><td class="c">${i+1}</td><td>${esc(r.ten)}</td><td class="c">${esc(r.bien)}</td><td class="c">${esc(r.cv)}</td>
-    <td class="c">${esc(r.cong)}</td><td class="r">${fM(r.dg)}</td><td class="r">${fM(r.tt)}</td>${thue?`<td class="r">${fM(r.thue)}</td>`:''}
-    <td class="r">${fM(r.tn)}</td><td class="c">${esc(r.g1)}</td><td class="c">${esc(r.g2)}</td></tr>`;});
-  h+=`<tr class="tong"><td></td><td class="c">Cộng</td><td></td><td></td><td></td><td></td><td></td>${thue?'<td></td>':''}<td class="r">${fM(tot)}</td><td></td><td></td></tr></tbody></table>`;
+  const empty=n=>'<td></td>'.repeat(n);
+  const sumRow=(label,val,cls)=>`<tr class="${cls}"><td></td><td class="c">${label}</td>${empty(5)}${thue?'<td></td>':''}<td class="r">${fM(val)}</td><td></td><td></td></tr>`;
+  let i=0;
+  groups.forEach((G,gi)=>{
+    if(grouped)h+=`<tr class="nhom"><td colspan="${ncol}">${['I','II','III'][gi]}. ${esc(G.g.toUpperCase())}</td></tr>`;
+    G.rows.forEach(r=>{i++;h+=`<tr><td class="c">${i}</td><td>${esc(r.ten)}</td><td class="c">${esc(r.bien)}</td><td class="c">${esc(r.cv)}</td>
+      <td class="c">${esc(r.cong)}</td><td class="r">${fM(r.dg)}</td><td class="r">${fM(r.tt)}</td>${thue?`<td class="r">${fM(r.thue)}</td>`:''}
+      <td class="r">${fM(r.tn)}</td><td class="c">${esc(r.g1)}</td><td class="c">${esc(r.g2)}</td></tr>`;});
+    if(grouped)h+=sumRow('Cộng '+G.g.toLowerCase(),G.rows.reduce((s,r)=>s+(+r.tn||0),0),'sub');
+  });
+  if(!rows.length)h+=`<tr><td colspan="${ncol}" class="c">Không có dòng nào cho loại "${esc(t)}" trong ngày này</td></tr>`;
+  h+=sumRow(grouped?'Tổng cộng':'Cộng',tot,'tong')+'</tbody></table>';
   if($('chu').checked)h+=`<div class="chu">Số tiền bằng chữ: <span contenteditable>${docSo(tot)}</span>.</div>`;
   h+=`<div class="ky"><div><div class="ngayky">&nbsp;</div><div class="t">Người đề nghị thanh toán</div><div class="s">(Ký, họ tên)</div><div class="ten" contenteditable>${esc(CFG.nguoiDN)}</div></div>
     <div><div class="ngayky" contenteditable>${ngay}</div><div class="t">Người duyệt</div><div class="s">(Ký, họ tên)</div><div class="ten" contenteditable>${esc(CFG.nguoiDuyet)}</div></div></div>`;
@@ -122,7 +194,7 @@ function draw(){
 async function savePdf(){
   $('msg').textContent='Đang tạo PDF…';
   const html='<html><head><meta charset="utf-8"><style>'+$('printcss').textContent+'</style></head><body>'+$('page').outerHTML+'</body></html>';
-  try{const r=await run('savePrintPdf',html,'BangThanhToanLuong_'+CUR.date);
+  try{const r=await run('savePrintPdf',html,'BangThanhToanLuong_'+CUR.date+'_'+(TYPE||'Ca2').replace(/\s+/g,''));
     $('msg').innerHTML='✅ Đã lưu: <a href="'+r.url+'" target="_blank">Mở PDF</a>';}catch(e){$('msg').textContent='Lỗi: '+e.message;}
 }
 init();
