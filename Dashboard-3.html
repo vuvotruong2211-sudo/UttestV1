@@ -120,13 +120,13 @@ a.lnk:hover{text-decoration:underline}
 <main>
   <!-- TỔNG QUAN -->
   <section class="tab on" id="t-ov">
-    <div class="sec">Chi phí lương thời vụ</div>
+    <div class="sec">Chi phí lương BHXH (anh em lâu năm – theo chuyến)</div>
     <div class="grid kpis" id="kpi1"></div>
     <div class="sec">Vận hành & điều độ</div>
     <div class="grid kpis" id="kpi2"></div>
     <div class="sec">Xu hướng năm <span id="yLbl"></span></div>
     <div class="grid two">
-      <div class="card"><h3>Chi lương thời vụ & số chuyến theo tháng</h3><div class="chart"><canvas id="chMonth"></canvas></div></div>
+      <div class="card"><h3>Chi lương BHXH & số chuyến theo tháng</h3><div class="chart"><canvas id="chMonth"></canvas></div></div>
       <div class="card"><h3>Lượt BHXH / thời vụ theo tháng</h3><div class="chart"><canvas id="chMix"></canvas></div></div>
     </div>
     <div class="grid two" style="margin-top:12px">
@@ -137,7 +137,7 @@ a.lnk:hover{text-decoration:underline}
     <div class="grid three">
       <div class="card"><h3>Chiều tuyến</h3><div class="chart" style="height:220px"><canvas id="chRoute"></canvas></div><div class="tw" id="tbRoute" style="margin-top:10px"></div></div>
       <div class="card"><h3>Cấu hình xe</h3><div class="tw" id="tbCfg"></div></div>
-      <div class="card"><h3>Chi lương TV theo chức vụ</h3><div class="chart" style="height:220px"><canvas id="chCv"></canvas></div></div>
+      <div class="card"><h3>Chi lương BHXH theo chức vụ</h3><div class="chart" style="height:220px"><canvas id="chCv"></canvas></div></div>
     </div>
   </section>
 
@@ -159,7 +159,7 @@ a.lnk:hover{text-decoration:underline}
 
   <!-- THEO NGÀY -->
   <section class="tab" id="t-ng">
-    <div class="card"><h3>Chuyến & chi lương TV theo ngày <span class="hint" id="ngHint"></span></h3><div class="chart" style="height:320px"><canvas id="chDay"></canvas></div></div>
+    <div class="card"><h3>Chuyến & chi lương BHXH theo ngày <span class="hint" id="ngHint"></span></h3><div class="chart" style="height:320px"><canvas id="chDay"></canvas></div></div>
     <div class="tw" id="tbDay" style="margin-top:12px"></div>
   </section>
 
@@ -297,7 +297,7 @@ function metrics(f,s,e){
   const tvR=k.filter(r=>r[10]==='Thời vụ'),bhR=k.filter(r=>r[10]==='BHXH');
   const chi=sum(p,r=>r[8]),cong=sum(p,r=>r[6]);
   const sc=k.filter(r=>r[9]>=0),sc1=k.filter(r=>r[9]===1);
-  const cqd=tvR.length/(CFG.lpc||2);
+  const cqd=bhR.length/(CFG.lpc||2);
   return{chi,cong,dg:cong?chi/cong:0,nTVpaid:uniq(p.map(r=>r[1])),cqd,chenh:cqd-sum(pr,r=>r[6]),
     trips:uniq(k.map(r=>r.key)),luot:k.length,bh:bhR.length,tv:tvR.length,pctTV:k.length?tvR.length/k.length:0,
     nsBH:uniq(bhR.map(r=>r[6])),nsTV:uniq(tvR.map(r=>r[6])),
@@ -358,14 +358,14 @@ function renderOverview(f,R){
   const ln=R.e-R.s+1,el=Math.min(Math.max(TODAY-R.s+1,0),ln);
   const proj=(TODAY>=R.s&&TODAY<=R.e&&el>0)?c.chi/el*ln:c.chi;
   const k1=[
-    ['Tổng chi lương thời vụ',fM(c.chi),dl(c.chi,p.chi,false),'o'],
-    ['Công thời vụ đã trả',fN1(c.cong),dl(c.cong,p.cong,null),'o'],
+    ['Tổng chi lương BHXH (theo chuyến)',fM(c.chi),dl(c.chi,p.chi,false),'o'],
+    ['Công BHXH đã trả',fN1(c.cong),dl(c.cong,p.cong,null),'o'],
     ['Đơn giá BQ / công',fM(c.dg),dl(c.dg,p.dg,false),'o'],
-    ['Số người TV được trả',c.nTVpaid,dl(c.nTVpaid,p.nTVpaid,null),'o'],
-    ['Công TV quy đổi từ KHTC',fN1(c.cqd),dl(c.cqd,p.cqd,null),''],
+    ['Số người BHXH được trả',c.nTVpaid,dl(c.nTVpaid,p.nTVpaid,null),'o'],
+    ['Công BHXH quy đổi từ KHTC',fN1(c.cqd),dl(c.cqd,p.cqd,null),''],
     ['Chênh lệch công (chưa trả)',`<span style="color:${c.chenh>=CFG.chenh?'var(--red)':'inherit'}">${fN1(c.chenh)}</span>`,'<span class="muted">quy đổi KHTC − đã trả (ngày chạy)</span>',''],
     ['Ước tính tiền chưa trả',fM(Math.max(0,c.chenh)*(c.dg||CFG.dgChuan)),'<span class="muted">chênh lệch × đơn giá BQ</span>',''],
-    ['Dự phóng chi TV hết kỳ',fM(proj),'<span class="muted">tốc độ chi hiện tại × số ngày kỳ</span>','']
+    ['Dự phóng chi BHXH hết kỳ',fM(proj),'<span class="muted">tốc độ chi hiện tại × số ngày kỳ</span>','']
   ];
   const k2=[
     ['Tổng chuyến (xe·ngày·chiều)',fM(c.trips),dl(c.trips,p.trips,true)],
@@ -386,11 +386,11 @@ function renderOverview(f,R){
     return{th:'T'+(i+1),chi:m.chi,cong:m.cong,dg:m.dg,trips:m.trips,bh:m.bh,tv:m.tv,pct:m.pctTV,chenh:m.chenh};});
   const tot={th:'Cả năm',chi:sum(months,r=>r.chi),cong:sum(months,r=>r.cong),trips:sum(months,r=>r.trips),bh:sum(months,r=>r.bh),tv:sum(months,r=>r.tv),chenh:sum(months,r=>r.chenh)};
   tot.dg=tot.cong?tot.chi/tot.cong:0;tot.pct=(tot.bh+tot.tv)?tot.tv/(tot.bh+tot.tv):0;
-  table('tbMonth',[{k:'th',t:'Tháng'},{k:'chi',t:'Chi lương TV',n:1,f:fM},{k:'cong',t:'Công trả',n:1,f:fN1},{k:'dg',t:'Đơn giá BQ',n:1,f:fM},
+  table('tbMonth',[{k:'th',t:'Tháng'},{k:'chi',t:'Chi lương BHXH',n:1,f:fM},{k:'cong',t:'Công trả',n:1,f:fN1},{k:'dg',t:'Đơn giá BQ',n:1,f:fM},
     {k:'trips',t:'Chuyến',n:1,f:fM},{k:'bh',t:'Lượt BHXH',n:1,f:fM},{k:'tv',t:'Lượt TV',n:1,f:fM},{k:'pct',t:'% TV',n:1,f:fP},
     {k:'chenh',t:'Chênh công',n:1,f:v=>v>=CFG.chenh?`<b style="color:var(--red)">${fN1(v)}</b>`:fN1(v)}],months,{foot:tot});
   mkChart('chMonth',{type:'bar',data:{labels:months.map(r=>r.th),datasets:[
-    {type:'bar',label:'Chi lương TV',data:months.map(r=>r.chi||null),backgroundColor:'#2E86AB',borderRadius:4,yAxisID:'y'},
+    {type:'bar',label:'Chi lương BHXH',data:months.map(r=>r.chi||null),backgroundColor:'#2E86AB',borderRadius:4,yAxisID:'y'},
     {type:'line',label:'Chuyến',data:months.map(r=>r.trips||null),spanGaps:false,borderColor:'#F18F01',backgroundColor:'#F18F01',tension:.3,yAxisID:'y1',pointRadius:3}]},
     options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top'},tooltip:{callbacks:{label:x=>x.dataset.label+': '+(x.datasetIndex?fM(x.raw):fM(x.raw)+' đ')}}},
       scales:{y:{ticks:{callback:v=>fShort(v)},grid:{color:'#EEF1F5'}},y1:{position:'right',grid:{display:false}},x:{grid:{display:false}}}}});
@@ -405,7 +405,7 @@ function renderOverview(f,R){
   const g=(a,b)=>b?((a/b-1)*100).toFixed(1)+'%':'–';
   qs.push({k:'Tăng trưởng',chi:g(yc.chi,yp.chi),cong:g(yc.cong,yp.cong),trips:g(yc.trips,yp.trips),pct:yp.luot?((yc.pctTV-yp.pctTV)*100).toFixed(1)+' điểm':'–'});
   const fx=fn=>v=>typeof v==='number'?fn(v):esc(v);
-  table('tbQuarter',[{k:'k',t:'Kỳ'},{k:'chi',t:'Chi lương TV',n:1,f:fx(fM)},{k:'cong',t:'Công trả',n:1,f:fx(fN1)},{k:'trips',t:'Chuyến',n:1,f:fx(fM)},{k:'pct',t:'% TV',n:1,f:fx(fP)}],qs);
+  table('tbQuarter',[{k:'k',t:'Kỳ'},{k:'chi',t:'Chi lương BHXH',n:1,f:fx(fM)},{k:'cong',t:'Công trả',n:1,f:fx(fN1)},{k:'trips',t:'Chuyến',n:1,f:fx(fM)},{k:'pct',t:'% TV',n:1,f:fx(fP)}],qs);
 
   // Tuyến
   const rt={};c.k.forEach(r=>{const o=rt[r[1]]=rt[r[1]]||{t:r[1],keys:new Set(),bh:0,tv:0,sc:new Set(),sc1:new Set()};
@@ -428,14 +428,14 @@ function renderOverview(f,R){
 let TXROWS=[];
 function driverAgg(f,R){
   const k=kIn(f,R.s,R.e),p=pIn(f,R.s,R.e),pr=pRun(f,R.s,R.e),m={};
-  const g=n=>m[n]=m[n]||{ten:n,ngay:new Set(),lu:0,tv:0,xe:new Set(),cgtt:0,tien:0,cg:0,cv:''};
-  k.forEach(r=>{const o=g(r[6]);o.ngay.add(r[0]);o.lu++;if(r[10]==='Thời vụ')o.tv++;o.xe.add(r[5]);if(!o.cv)o.cv=r[7];});
+  const g=n=>m[n]=m[n]||{ten:n,ngay:new Set(),lu:0,bh:0,xe:new Set(),cgtt:0,tien:0,cg:0,cv:''};
+  k.forEach(r=>{const o=g(r[6]);o.ngay.add(r[0]);o.lu++;if(r[10]==='BHXH')o.bh++;o.xe.add(r[5]);if(!o.cv)o.cv=r[7];});
   p.forEach(r=>{const o=g(r[1]);o.tien+=N(r[8]);o.cg+=N(r[6]);if(!o.cv)o.cv=r[2];});
   pr.forEach(r=>{const o=g(r[1]);o.cgtt+=N(r[6]);});
   const lastK={},lastP={};K.forEach(r=>{if(!(lastK[r[6]]>=r[0]))lastK[r[6]]=r[0];});P.forEach(r=>{if(!(lastP[r[1]]>=r[9]))lastP[r[1]]=r[9];});
-  return Object.values(m).map(o=>{const cqd=o.tv/(CFG.lpc||2),chenh=cqd-o.cgtt,dg=o.cg?o.tien/o.cg:0,loai=(o.tv>0||o.tien>0||o.cgtt>0)?'Thời vụ':'BHXH';
-    const st=loai!=='Thời vụ'?'—':(chenh>=CFG.chenh?'Chưa TT đủ':(chenh<=-CFG.chenh?'TT vượt KHTC':'Khớp'));
-    return{ten:o.ten,loai,cv:o.cv,ngay:o.ngay.size,lu:o.lu,tv:o.tv,cqd,cgtt:o.cgtt,chenh,tien:o.tien,dg,uoc:chenh>0?chenh*(dg||CFG.dgChuan):0,xe:o.xe.size,
+  return Object.values(m).map(o=>{const cqd=o.bh/(CFG.lpc||2),chenh=cqd-o.cgtt,dg=o.cg?o.tien/o.cg:0,loai=(o.bh>0||o.tien>0||o.cgtt>0)?'BHXH':'Thời vụ';
+    const st=loai!=='BHXH'?'—':(chenh>=CFG.chenh?'Chưa TT đủ':(chenh<=-CFG.chenh?'TT vượt KHTC':'Khớp'));
+    return{ten:o.ten,loai,cv:o.cv,ngay:o.ngay.size,lu:o.lu,bh:o.bh,cqd,cgtt:o.cgtt,chenh,tien:o.tien,dg,uoc:chenh>0?chenh*(dg||CFG.dgChuan):0,xe:o.xe.size,
       lk:lastK[o.ten]||'',lp:lastP[o.ten]||'',st};});
 }
 function renderTx(){
@@ -443,9 +443,9 @@ function renderTx(){
   const q=$('txSearch').value.trim().toLowerCase(),t=$('txType').value;
   const rows=TXROWS.filter(r=>(!q||r.ten.toLowerCase().includes(q))&&(!t||r.loai===t));
   const stc=v=>v==='Chưa TT đủ'||v==='TT vượt KHTC'?chip('⚠ '+v,'red'):(v==='Khớp'?chip('✓ Khớp','green'):'<span class="muted">—</span>');
-  const foot={ten:rows.length+' người',lu:sum(rows,r=>r.lu),tv:sum(rows,r=>r.tv),cqd:sum(rows,r=>r.cqd),cgtt:sum(rows,r=>r.cgtt),chenh:sum(rows,r=>r.chenh),tien:sum(rows,r=>r.tien),uoc:sum(rows,r=>r.uoc)};
+  const foot={ten:rows.length+' người',lu:sum(rows,r=>r.lu),bh:sum(rows,r=>r.bh),cqd:sum(rows,r=>r.cqd),cgtt:sum(rows,r=>r.cgtt),chenh:sum(rows,r=>r.chenh),tien:sum(rows,r=>r.tien),uoc:sum(rows,r=>r.uoc)};
   table('tbTx',[{k:'ten',t:'Họ và tên',f:v=>`<b>${esc(v)}</b>`},{k:'loai',t:'Loại',f:v=>chip(v,v==='Thời vụ'?'orange':'blue')},{k:'cv',t:'Chức vụ'},
-    {k:'ngay',t:'Ngày chạy',n:1},{k:'lu',t:'Lượt KHTC',n:1,f:fM},{k:'tv',t:'Lượt TV',n:1,f:fM},{k:'cqd',t:'Công QĐ',n:1,f:fN1},{k:'cgtt',t:'Công đã trả',n:1,f:fN1},
+    {k:'ngay',t:'Ngày chạy',n:1},{k:'lu',t:'Lượt KHTC',n:1,f:fM},{k:'bh',t:'Lượt BHXH',n:1,f:fM},{k:'cqd',t:'Công QĐ',n:1,f:fN1},{k:'cgtt',t:'Công đã trả',n:1,f:fN1},
     {k:'chenh',t:'Chênh lệch',n:1,f:v=>v>0.0001?`<b style="color:var(--red)">${fN1(v)}</b>`:fN1(v)},{k:'tien',t:'Thực nhận',n:1,f:fM},{k:'dg',t:'Đơn giá BQ',n:1,f:fM},
     {k:'uoc',t:'Ước tiền chưa trả',n:1,f:fM},{k:'xe',t:'Số xe',n:1},{k:'lk',t:'Chạy cuối',f:fD},{k:'lp',t:'TT cuối',f:fD},{k:'st',t:'Trạng thái',f:stc}],
     rows,{sort:{k:'tien',d:-1},foot,click:r=>{$('tcName').value=r.ten;showTab('tc');renderTc();}});
@@ -463,7 +463,7 @@ function renderXe(){
     ns:o.ns.size,lu:o.lu,tv:o.tv,pct:o.lu?o.tv/o.lu:0,chi:chi[o.b]||0,scan:o.sc.size?o.sc1.size/o.sc.size:'',lk:last[o.b],nam:TODAY-last[o.b]}));
   table('tbXe',[{k:'b',t:'Biển số',f:v=>`<b>${plate(v)}</b>`},{k:'nhom',t:'Nhóm'},{k:'ch',t:'Cấu hình'},{k:'tuyen',t:'Tuyến'},{k:'chuyen',t:'Chuyến',n:1},{k:'ngay',t:'Ngày HĐ',n:1},
     {k:'hd',t:'% ngày HĐ',f:v=>`<div style="display:flex;gap:6px;align-items:center">${bar(v,v<.5?'var(--red)':'var(--green)')}<span>${fP(v)}</span></div>`},
-    {k:'ns',t:'Số NS',n:1},{k:'lu',t:'Lượt NS',n:1},{k:'pct',t:'% TV',n:1,f:fP},{k:'chi',t:'Chi lương TV',n:1,f:fM},
+    {k:'ns',t:'Số NS',n:1},{k:'lu',t:'Lượt NS',n:1},{k:'pct',t:'% TV',n:1,f:fP},{k:'chi',t:'Chi lương BHXH',n:1,f:fM},
     {k:'scan',t:'% có scan',n:1,f:v=>v!==''&&v<.8?`<b style="color:var(--red)">${fP(v)}</b>`:fP(v)},{k:'lk',t:'Chạy cuối',f:fD},
     {k:'nam',t:'Ngày nằm',n:1,f:v=>v>=3?chip(v+' ngày','red'):v}],rows,{sort:{k:'chuyen',d:-1}});
 }
@@ -480,12 +480,12 @@ function renderDay(f,R){
   const W=['CN','T2','T3','T4','T5','T6','T7'];
   const rows=Object.values(m).map(o=>({d:o.d,thu:W[dt(o.d).getUTCDay()],ch:o.keys.size,qn:o.qn.size,dl:o.dl.size,lu:o.lu,bh:o.bh,tv:o.tv,chi:o.chi,cg:o.cg,scan:o.sc.size?o.sc1.size/o.sc.size:''}));
   table('tbDay',[{k:'d',t:'Ngày',f:fD},{k:'thu',t:'Thứ',f:v=>v==='CN'?`<b style="color:var(--red)">CN</b>`:v},{k:'ch',t:'Chuyến',n:1},{k:'qn',t:'HCM-QN',n:1},{k:'dl',t:'HCM-ĐL',n:1},
-    {k:'lu',t:'Lượt NS',n:1},{k:'bh',t:'BHXH',n:1},{k:'tv',t:'TV',n:1},{k:'chi',t:'Chi lương TV',n:1,f:fM},{k:'cg',t:'Công trả',n:1,f:fN1},{k:'scan',t:'% scan',n:1,f:fP}],rows,
+    {k:'lu',t:'Lượt NS',n:1},{k:'bh',t:'BHXH',n:1},{k:'tv',t:'TV',n:1},{k:'chi',t:'Chi lương BHXH',n:1,f:fM},{k:'cg',t:'Công trả',n:1,f:fN1},{k:'scan',t:'% scan',n:1,f:fP}],rows,
     {foot:{d:'Tổng',ch:sum(rows,r=>r.ch),qn:sum(rows,r=>r.qn),dl:sum(rows,r=>r.dl),lu:sum(rows,r=>r.lu),bh:sum(rows,r=>r.bh),tv:sum(rows,r=>r.tv),chi:sum(rows,r=>r.chi),cg:sum(rows,r=>r.cg)}});
   mkChart('chDay',{type:'bar',data:{labels:rows.map(r=>fDM(r.d)),datasets:[
     {type:'bar',label:'Chuyến HCM-QN',data:rows.map(r=>r.qn),backgroundColor:'#1F3A5F',stack:'c',yAxisID:'y'},
     {type:'bar',label:'Chuyến HCM-ĐL',data:rows.map(r=>r.dl),backgroundColor:'#2E86AB',stack:'c',yAxisID:'y'},
-    {type:'line',label:'Chi lương TV',data:rows.map(r=>r.chi),borderColor:'#F18F01',backgroundColor:'#F18F01',yAxisID:'y1',tension:.25,pointRadius:2}]},
+    {type:'line',label:'Chi lương BHXH',data:rows.map(r=>r.chi),borderColor:'#F18F01',backgroundColor:'#F18F01',yAxisID:'y1',tension:.25,pointRadius:2}]},
     options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top'}},
       scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid:{color:'#EEF1F5'}},y1:{position:'right',grid:{display:false},ticks:{callback:v=>fShort(v)}}}}});
 }
@@ -524,10 +524,10 @@ function renderAlerts(){
   if(!RAW)return;const f=F(),R=range(f),k=kIn(f,R.s,R.e),p=pIn(f,R.s,R.e);
   const tx=driverAgg(f,R),A=[];
   const add=(title,level,cols,rows)=>A.push({title,level,cols,rows});
-  add('Thời vụ chạy nhưng CHƯA thanh toán đủ','red',[{k:'ten',t:'Họ tên'},{k:'tv',t:'Lượt TV',n:1},{k:'cqd',t:'Công QĐ',n:1,f:fN1},{k:'cgtt',t:'Đã trả',n:1,f:fN1},{k:'chenh',t:'Chênh',n:1,f:fN1},{k:'uoc',t:'Ước tiền',n:1,f:fM}],
-    tx.filter(r=>r.loai==='Thời vụ'&&r.chenh>=CFG.chenh).sort((a,b)=>b.chenh-a.chenh));
-  add('Thanh toán VƯỢT so với KHTC','red',[{k:'ten',t:'Họ tên'},{k:'tv',t:'Lượt TV',n:1},{k:'cqd',t:'Công QĐ',n:1,f:fN1},{k:'cgtt',t:'Đã trả',n:1,f:fN1},{k:'chenh',t:'Chênh',n:1,f:fN1}],
-    tx.filter(r=>r.loai==='Thời vụ'&&r.chenh<=-CFG.chenh).sort((a,b)=>a.chenh-b.chenh));
+  add('BHXH chạy nhưng CHƯA thanh toán đủ','red',[{k:'ten',t:'Họ tên'},{k:'bh',t:'Lượt BHXH',n:1},{k:'cqd',t:'Công QĐ',n:1,f:fN1},{k:'cgtt',t:'Đã trả',n:1,f:fN1},{k:'chenh',t:'Chênh',n:1,f:fN1},{k:'uoc',t:'Ước tiền',n:1,f:fM}],
+    tx.filter(r=>r.loai==='BHXH'&&r.chenh>=CFG.chenh).sort((a,b)=>b.chenh-a.chenh));
+  add('Thanh toán VƯỢT so với KHTC','red',[{k:'ten',t:'Họ tên'},{k:'bh',t:'Lượt BHXH',n:1},{k:'cqd',t:'Công QĐ',n:1,f:fN1},{k:'cgtt',t:'Đã trả',n:1,f:fN1},{k:'chenh',t:'Chênh',n:1,f:fN1}],
+    tx.filter(r=>r.loai==='BHXH'&&r.chenh<=-CFG.chenh).sort((a,b)=>a.chenh-b.chenh));
   const kSet=new Set(K.map(r=>r[6]+'|'+r[0]));
   const pc=[{k:'row',t:'Dòng TT',n:1},{k:'tt',t:'Ngày TT',f:fD},{k:'ten',t:'Họ tên'},{k:'b',t:'Biển',f:plate},{k:'di',t:'Ngày đi',f:fD},{k:'ve',t:'Ngày về',f:fD},{k:'cg',t:'Công',n:1},{k:'dg',t:'Đơn giá',n:1,f:fM},{k:'tien',t:'Thực nhận',n:1,f:fM}];
   const pr=r=>({row:r[13],tt:r[9],ten:r[1],b:r[3],di:r[10],ve:r[11],cg:r[6],dg:r[7],tien:r[8]});
@@ -537,7 +537,7 @@ function renderAlerts(){
   add('Đơn giá NGOÀI KHUNG cho phép','orange',pc,p.filter(r=>N(r[7])<CFG.dgMin||N(r[7])>CFG.dgMax).map(pr));
   add('Thanh toán THIẾU biển số xe','amber',pc,p.filter(r=>!r[3]).map(pr));
   const stk={};P.forEach(r=>{const o=stk[r[1]]=stk[r[1]]||{ten:r[1],ok:false,tien:0,lp:0};if(!r[12])o.ok=true;o.tien+=N(r[8]);o.lp=Math.max(o.lp,N(r[9]));});
-  add('Thời vụ CHƯA CÓ số tài khoản (toàn bộ lịch sử)','amber',[{k:'ten',t:'Họ tên'},{k:'tien',t:'Tổng đã chi',n:1,f:fM},{k:'lp',t:'TT cuối',f:fD}],Object.values(stk).filter(o=>!o.ok));
+  add('BHXH CHƯA CÓ số tài khoản (toàn bộ lịch sử)','amber',[{k:'ten',t:'Họ tên'},{k:'tien',t:'Tổng đã chi',n:1,f:fM},{k:'lp',t:'TT cuối',f:fD}],Object.values(stk).filter(o=>!o.ok));
   const kn=new Set(K.map(r=>r[6]));const pn={};P.forEach(r=>pn[r[1]]=(pn[r[1]]||0)+1);
   add('Tên trong bảng TT KHÔNG khớp KHTC (kiểm tra DM_ALIAS)','orange',[{k:'ten',t:'Họ tên'},{k:'n',t:'Số lần TT',n:1}],Object.keys(pn).filter(n=>!kn.has(n)).map(n=>({ten:n,n:pn[n]})));
   const dd={};K.forEach(r=>{const x=r[6]+'|'+r[0];dd[x]=(dd[x]||0)+1;});const seen=new Set();
@@ -578,13 +578,13 @@ function renderTc(){
   const kAll=K.filter(r=>r[6]===n),pAll=P.filter(r=>r[1]===n);
   if(!kAll.length&&!pAll.length){$('tcBody').innerHTML='<div class="empty">Không tìm thấy "'+esc(n)+'"</div>';return;}
   const k=kAll.filter(r=>r[0]>=R.s&&r[0]<=R.e),p=pAll.filter(r=>r[0]>=R.s&&r[0]<=R.e),pr=pAll.filter(r=>r[14]>=R.s&&r[14]<=R.e);
-  const tv=k.filter(r=>r[10]==='Thời vụ').length,cqd=tv/(CFG.lpc||2),cgtt=sum(pr,r=>r[6]),tien=sum(p,r=>r[8]);
-  const loai=(tv>0||tien>0||cgtt>0)?'Thời vụ':'BHXH',cv=(kAll[0]||[])[7]||(pAll[0]||[])[2]||'';
+  const bh=k.filter(r=>r[10]==='BHXH').length,cqd=bh/(CFG.lpc||2),cgtt=sum(pr,r=>r[6]),tien=sum(p,r=>r[8]);
+  const loai=(bh>0||tien>0||cgtt>0)?'BHXH':'Thời vụ',cv=(kAll[0]||[])[7]||(pAll[0]||[])[2]||'';
   const xeM={};k.forEach(r=>xeM[r[5]]=(xeM[r[5]]||0)+1);const xeTop=Object.entries(xeM).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>plate(x[0])+' ('+x[1]+')').join(', ');
   const lk=Math.max(...kAll.map(r=>r[0]),0),lp=Math.max(...pAll.map(r=>r[9]),0);
-  const cards=[['Loại trong kỳ',chip(loai,loai==='Thời vụ'?'orange':'blue')],['Chức vụ',esc(cv)],['Lượt kỳ',k.length],['Lượt TV',tv],['Công QĐ',fN1(cqd)],['Công đã trả',fN1(cgtt)],
+  const cards=[['Loại trong kỳ',chip(loai,loai==='Thời vụ'?'orange':'blue')],['Chức vụ',esc(cv)],['Lượt kỳ',k.length],['Lượt BHXH',bh],['Công QĐ',fN1(cqd)],['Công đã trả',fN1(cgtt)],
     ['Chênh lệch',`<span style="color:${cqd-cgtt>=CFG.chenh?'var(--red)':'inherit'}">${fN1(cqd-cgtt)}</span>`],['Thực nhận',fM(tien)],['Chạy cuối',fD(lk)||'–'],['TT cuối',fD(lp)||'–']];
-  const months=[...Array(12)].map((_,i)=>{const s=dayOf(f.y,i+1,1),e=eom(f.y,i+1);const kk=kAll.filter(r=>r[0]>=s&&r[0]<=e),t=kk.filter(r=>r[10]==='Thời vụ').length;
+  const months=[...Array(12)].map((_,i)=>{const s=dayOf(f.y,i+1,1),e=eom(f.y,i+1);const kk=kAll.filter(r=>r[0]>=s&&r[0]<=e),t=kk.filter(r=>r[10]==='BHXH').length;
     const c=sum(pAll.filter(r=>r[14]>=s&&r[14]<=e),r=>r[6]);return{m:'T'+(i+1),lu:kk.length,tv:t,ng:uniq(kk.map(r=>r[0])),cqd:t/(CFG.lpc||2),cg:c,ch:t/(CFG.lpc||2)-c,tien:sum(pAll.filter(r=>r[0]>=s&&r[0]<=e),r=>r[8])};});
   $('tcBody').innerHTML=`<div class="grid kpis">${cards.map(c=>`<div class="kpi"><div class="t">${c[0]}</div><div class="v" style="font-size:17px">${c[1]}</div></div>`).join('')}</div>
     <div class="muted" style="margin:8px 0">Xe chạy nhiều nhất trong kỳ: ${xeTop||'–'}</div>
@@ -592,10 +592,10 @@ function renderTc(){
     <div class="card"><h3>Lượt theo tháng</h3><div class="chart" style="height:250px"><canvas id="chTc"></canvas></div></div></div>
     <div class="sec">Chuyến trong kỳ (KHTC)</div><div class="tw" id="tcTrips" style="max-height:420px"></div>
     <div class="sec">Thanh toán trong kỳ</div><div class="tw" id="tcPays" style="max-height:360px"></div>`;
-  table('tcMonth',[{k:'m',t:'Tháng'},{k:'lu',t:'Lượt',n:1},{k:'tv',t:'Lượt TV',n:1},{k:'ng',t:'Ngày chạy',n:1},{k:'cqd',t:'Công QĐ',n:1,f:fN1},{k:'cg',t:'Đã trả',n:1,f:fN1},
+  table('tcMonth',[{k:'m',t:'Tháng'},{k:'lu',t:'Lượt',n:1},{k:'tv',t:'Lượt BHXH',n:1},{k:'ng',t:'Ngày chạy',n:1},{k:'cqd',t:'Công QĐ',n:1,f:fN1},{k:'cg',t:'Đã trả',n:1,f:fN1},
     {k:'ch',t:'Chênh',n:1,f:v=>v>=CFG.chenh?`<b style="color:var(--red)">${fN1(v)}</b>`:fN1(v)},{k:'tien',t:'Thực nhận',n:1,f:fM}],months,
     {foot:{m:'Cả năm',lu:sum(months,r=>r.lu),tv:sum(months,r=>r.tv),ng:sum(months,r=>r.ng),cqd:sum(months,r=>r.cqd),cg:sum(months,r=>r.cg),ch:sum(months,r=>r.ch),tien:sum(months,r=>r.tien)}});
-  mkChart('chTc',{type:'bar',data:{labels:months.map(r=>r.m),datasets:[{label:'BHXH',data:months.map(r=>r.lu-r.tv),backgroundColor:'#1F3A5F'},{label:'Thời vụ',data:months.map(r=>r.tv),backgroundColor:'#F18F01'}]},
+  mkChart('chTc',{type:'bar',data:{labels:months.map(r=>r.m),datasets:[{label:'BHXH',data:months.map(r=>r.tv),backgroundColor:'#1F3A5F'},{label:'Thời vụ',data:months.map(r=>r.lu-r.tv),backgroundColor:'#F18F01'}]},
     options:{maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true}}}});
   const paidDays=new Set();pAll.forEach(r=>{if(r[10]!=='')paidDays.add(r[10]);if(r[11]!=='')paidDays.add(r[11]);});
   const scanMap={};S.forEach(r=>{if(String(r[10]).toLowerCase()!=='khac'){const x=r[1]+'|'+r[0];if(!scanMap[x])scanMap[x]=r[9];}});
@@ -604,7 +604,7 @@ function renderTc(){
     {k:'mate',t:'Đi cùng'},{k:'lo',t:'Loại',f:v=>chip(v,v==='Thời vụ'?'orange':'blue')},{k:'sc',t:'Scan',f:v=>v===1?chip('✓','green'):(v===0?chip('✗','red'):'')},
     {k:'tt',t:'Thanh toán',f:v=>v===''?'':(v?chip('✓ Đã TT','green'):chip('✗ Chưa thấy','red'))},{k:'l',t:'Hồ sơ',f:link}],
     k.map(r=>({d:r[0],t:r[1],g:r[8],b:r[5],ch:r[4],cv:r[7],mate:(mates[r.key]||[]).filter(x=>x!==n).join(', '),lo:r[10],sc:r[9],
-      tt:r[10]==='Thời vụ'?paidDays.has(r[0]):'',l:scanMap[r[5]+'|'+r[0]]})),{sort:{k:'d',d:1}});
+      tt:r[10]==='BHXH'?paidDays.has(r[0]):'',l:scanMap[r[5]+'|'+r[0]]})),{sort:{k:'d',d:1}});
   table('tcPays',[{k:'tt',t:'Ngày TT',f:fD},{k:'cg',t:'Công',n:1},{k:'dg',t:'Đơn giá',n:1,f:fM},{k:'tien',t:'Thực nhận',n:1,f:fM},{k:'di',t:'Ngày đi',f:fD},{k:'ve',t:'Ngày về',f:fD},{k:'b',t:'Biển số',f:plate},{k:'row',t:'Dòng',n:1}],
     p.map(r=>({tt:r[9],cg:r[6],dg:r[7],tien:r[8],di:r[10],ve:r[11],b:r[3],row:r[13]})),{sort:{k:'tt',d:1}});
 }
