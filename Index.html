@@ -494,7 +494,11 @@ function openEdit(r){
 document.querySelectorAll('#presets button').forEach(b => b.onclick = () => { setPreset(b.dataset.p); load(); });
 ['from','to'].forEach(id => $(id).onchange = () => document.querySelectorAll('#presets button').forEach(x => x.classList.remove('on')));
 $('btnLoad').onclick = load;
-$('btnGom').onclick = async () => { busy(true); try{ await api('gomLaiTuDashboard'); }catch(e){ toast('Lỗi gom: ' + (e.message||e)); } busy(false); load(); };
+$('btnGom').onclick = async () => {
+  busy(true);
+  try{ const m = await api('gomLaiTuDashboard'); busy(false); await load(); if (typeof m === 'string') toast(m, 4000); }
+  catch(e){ busy(false); toast('Lỗi gom: ' + (e.message||e), 8000); }
+};
 $('fVP').onchange = () => { shown = 200; renderAll(); };
 ['fNV','fLoai','fStatus','fWarn'].forEach(id => $(id).onchange = () => { shown = 200; renderReview(); });
 $('fQ').oninput = () => { shown = 200; clearTimeout($('fQ')._t); $('fQ')._t = setTimeout(renderReview, 200); };
