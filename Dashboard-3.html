@@ -77,6 +77,14 @@ a.lnk:hover{text-decoration:underline}
 .spin{width:36px;height:36px;border:4px solid #D5DDE8;border-top-color:var(--orange);border-radius:50%;animation:s 1s linear infinite}
 @keyframes s{to{transform:rotate(360deg)}}
 .empty{padding:20px;text-align:center;color:var(--muted)}
+.xehead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0 10px;padding:12px 14px;background:var(--navy);color:#fff;border-radius:10px}
+.xehead .pl{font-size:18px;font-weight:700;letter-spacing:.5px}
+.xehead .meta{font-size:12px;opacity:.85}
+.xehead .x{margin-left:auto;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font:inherit}
+.crew{display:flex;flex-wrap:wrap;gap:4px}
+.crew .p{padding:1px 7px;border-radius:9px;font-size:11px;background:#EAF2F8;color:var(--navy)}
+.crew .p.tv{background:#FEF5E7;color:var(--amber)}
+.crew .p.px{border:1px dashed #AAB7C4}
 @media(max-width:700px){main,.filters,nav{padding-left:12px;padding-right:12px}.two{grid-template-columns:1fr}.kpi .v{font-size:18px}.period{margin-left:0}}
 </style>
 </head>
@@ -153,8 +161,9 @@ a.lnk:hover{text-decoration:underline}
 
   <!-- XE -->
   <section class="tab" id="t-xe">
-    <div class="toolbar"><input id="xeSearch" placeholder="🔍 Tìm biển số…"><span class="muted">% ngày hoạt động tính đến hôm nay. Ngày nằm = số ngày kể từ chuyến cuối.</span></div>
-    <div class="tw" id="tbXe" style="max-height:72vh"></div>
+    <div class="toolbar"><input id="xeSearch" placeholder="🔍 Tìm biển số… (vd 061.31)"><span class="muted">Bấm vào 1 xe để xem <b>ekip</b>. % ngày hoạt động tính đến hôm nay. Ngày nằm = số ngày kể từ chuyến cuối.</span></div>
+    <div class="tw" id="tbXe" style="max-height:46vh"></div>
+    <div id="xeDetail"></div>
   </section>
 
   <!-- THEO NGÀY -->
@@ -465,7 +474,67 @@ function renderXe(){
     {k:'hd',t:'% ngày HĐ',f:v=>`<div style="display:flex;gap:6px;align-items:center">${bar(v,v<.5?'var(--red)':'var(--green)')}<span>${fP(v)}</span></div>`},
     {k:'ns',t:'Số NS',n:1},{k:'lu',t:'Lượt NS',n:1},{k:'pct',t:'% TV',n:1,f:fP},{k:'chi',t:'Chi lương BHXH',n:1,f:fM},
     {k:'scan',t:'% có scan',n:1,f:v=>v!==''&&v<.8?`<b style="color:var(--red)">${fP(v)}</b>`:fP(v)},{k:'lk',t:'Chạy cuối',f:fD},
-    {k:'nam',t:'Ngày nằm',n:1,f:v=>v>=3?chip(v+' ngày','red'):v}],rows,{sort:{k:'chuyen',d:-1}});
+    {k:'nam',t:'Ngày nằm',n:1,f:v=>v>=3?chip(v+' ngày','red'):v}],rows,{sort:{k:'chuyen',d:-1},click:r=>{XESEL=r.b;renderXeDetail();$('xeDetail').scrollIntoView({behavior:'smooth'});}});
+  if(rows.length===1)XESEL=rows[0].b;
+  else if(XESEL&&!rows.some(r=>r.b===XESEL))XESEL=null;
+  renderXeDetail();
+}
+
+/* ====================== EKIP THEO XE ====================== */
+let XESEL=null;
+function renderXeDetail(){
+  const box=$('xeDetail');
+  if(!XESEL){box.innerHTML='<div class="empty">👆 Gõ biển số hoặc bấm vào 1 xe để xem ekip (tài xế, phụ xe) chạy xe đó trong kỳ.</div>';return;}
+  const f=F(),R=range(f),b=XESEL;
+  // Ekip là của XE nên chỉ lọc theo kỳ + biển số (không lọc Tuyến/Nhóm/Chức vụ)
+  const k=K.filter(r=>r[5]===b&&r[0]>=R.s&&r[0]<=R.e);
+  if(!k.length){box.innerHTML=`<div class="empty">Xe ${plate(b)} không có chuyến nào trong kỳ.</div>`;return;}
+  const trips={};k.forEach(r=>{const t=trips[r.key]=trips[r.key]||{d:r[0],t:r[1],g:r[8],tx:[],px:[],sc:r[9],ns:[]};
+    (r[7]==='Phụ xe'?t.px:t.tx).push(r[6]);t.ns.push(r);});
+  const nTrip=Object.keys(trips).length;
+  // Nhân sự
+  const tienBy={};P.filter(r=>r[3]===b&&r[0]>=R.s&&r[0]<=R.e).forEach(r=>tienBy[r[1]]=(tienBy[r[1]]||0)+N(r[8]));
+  const ps={};k.forEach(r=>{const o=ps[r[6]]=ps[r[6]]||{ten:r[6],cv:r[7],loai:r[10],lu:0,ngay:new Set(),dau:r[0],cuoi:r[0],ch:{}};
+    o.lu++;o.ngay.add(r[0]);o.dau=Math.min(o.dau,r[0]);o.cuoi=Math.max(o.cuoi,r[0]);o.ch[r[1]]=(o.ch[r[1]]||0)+1;});
+  const people=Object.values(ps).map(o=>{const share=o.lu/nTrip;return{ten:o.ten,cv:o.cv,loai:o.loai,lu:o.lu,ngay:o.ngay.size,share,
+    vai:share>=.3?'Cố định':(share>=.1?'Thường xuyên':'Tăng cường'),dau:o.dau,cuoi:o.cuoi,tien:tienBy[o.ten]||0,
+    chieu:Object.entries(o.ch).map(([t,n])=>t.replace(' → ','→')+': '+n).join(' | ')};}).sort((a,b)=>b.lu-a.lu);
+  // Tổ hợp ekip
+  const cb={};Object.values(trips).forEach(t=>{const key=[...t.tx].sort().join(' + ')+(t.px.length?'  |  PX: '+[...t.px].sort().join(' + '):'');
+    const o=cb[key]=cb[key]||{ek:key,tx:[...t.tx].sort(),px:[...t.px].sort(),n:0,dau:t.d,cuoi:t.d};o.n++;o.dau=Math.min(o.dau,t.d);o.cuoi=Math.max(o.cuoi,t.d);});
+  const combos=Object.values(cb).sort((a,b)=>b.n-a.n||b.cuoi-a.cuoi);
+  // Link hồ sơ
+  const scanMap={};S.forEach(r=>{if(r[1]===b&&String(r[10]).toLowerCase()!=='khac'&&!scanMap[r[0]])scanMap[r[0]]=r[9];});
+  const loaiOf={};k.forEach(r=>loaiOf[r[6]]=r[10]);
+  const pill=(n,px)=>`<span class="p${loaiOf[n]==='Thời vụ'?' tv':''}${px?' px':''}">${esc(n)}</span>`;
+  const crew=(tx,px)=>`<div class="crew">${tx.map(n=>pill(n)).join('')}${px.map(n=>pill(n,1)).join('')}</div>`;
+  const first=k[0],nBH=people.filter(p=>p.loai==='BHXH').length,nTV=people.length-nBH,fixed=people.filter(p=>p.vai==='Cố định');
+  const thieu=Object.values(trips).filter(t=>!t.tx.length||t.tx.length<2&&first[3]==='Xe khách').length;
+  box.innerHTML=`<div class="xehead"><div class="pl">🚌 ${plate(b)}</div>
+      <div class="meta">${[...new Set(k.map(r=>r[3]))].map(esc).join(', ')} • ${[...new Set(k.map(r=>r[4]).filter(Boolean))].map(esc).join(', ')} • ${[...new Set(k.map(r=>r[2]))].map(esc).join(' & ')} • ${fD(R.s)} → ${fD(R.e)}</div>
+      <button class="x" onclick="XESEL=null;renderXeDetail()">✕ Đóng</button></div>
+    <div class="grid kpis">
+      <div class="kpi"><div class="t">Chuyến trong kỳ</div><div class="v">${nTrip}</div></div>
+      <div class="kpi"><div class="t">Số người đã chạy xe</div><div class="v">${people.length}</div><div class="d">${nBH} BHXH • ${nTV} thời vụ</div></div>
+      <div class="kpi"><div class="t">Ekip cố định (≥30% chuyến)</div><div class="v" style="font-size:14px">${fixed.map(p=>esc(p.ten)).join(', ')||'–'}</div></div>
+      <div class="kpi o"><div class="t">Số tổ hợp ekip khác nhau</div><div class="v">${combos.length}</div><div class="d">${combos.length>Math.max(3,nTrip/3)?'<span class="up-bad">Ekip thay đổi nhiều</span>':'<span class="up-good">Ekip khá ổn định</span>'}</div></div>
+      <div class="kpi o"><div class="t">Chuyến thiếu tài xế</div><div class="v" style="color:${thieu?'var(--red)':'inherit'}">${thieu}</div><div class="d muted">xe khách &lt; 2 tài xế</div></div>
+    </div>
+    <div class="grid two" style="margin-top:12px">
+      <div class="card"><h3>👥 Nhân sự trên xe <span class="hint">Cố định ≥30% • Thường xuyên ≥10% • Tăng cường &lt;10% số chuyến</span></h3><div class="tw" id="xeP"></div></div>
+      <div class="card"><h3>🔗 Tổ hợp ekip hay đi cùng nhau</h3><div class="tw" id="xeC"></div></div>
+    </div>
+    <div class="sec">🗓️ Lịch chạy & ekip từng chuyến</div><div class="tw" id="xeT" style="max-height:480px"></div>`;
+  table('xeP',[{k:'ten',t:'Họ tên',f:v=>`<b>${esc(v)}</b>`},{k:'cv',t:'Chức vụ'},{k:'loai',t:'Loại',f:v=>chip(v,v==='Thời vụ'?'orange':'blue')},
+    {k:'vai',t:'Vai trò',f:v=>chip(v,v==='Cố định'?'green':(v==='Thường xuyên'?'blue':'gray'))},{k:'lu',t:'Lượt',n:1},
+    {k:'share',t:'% chuyến xe',f:v=>`<div style="display:flex;gap:6px;align-items:center">${bar(v)}<span>${fP(v)}</span></div>`},
+    {k:'ngay',t:'Ngày',n:1},{k:'chieu',t:'Theo chiều'},{k:'dau',t:'Lần đầu',f:fD},{k:'cuoi',t:'Lần cuối',f:fD},{k:'tien',t:'Chi BHXH (xe này)',n:1,f:v=>v?fM(v):''}],
+    people,{sort:{k:'lu',d:-1},click:r=>{$('tcName').value=r.ten;showTab('tc');renderTc();}});
+  table('xeC',[{k:'tx',t:'Tài xế',f:v=>crew(v,[])},{k:'px',t:'Phụ xe',f:v=>crew([],v)},{k:'n',t:'Số chuyến',n:1},{k:'dau',t:'Từ',f:fD},{k:'cuoi',t:'Đến',f:fD}],combos,{sort:{k:'n',d:-1}});
+  table('xeT',[{k:'d',t:'Ngày',f:fD},{k:'t',t:'Chiều tuyến'},{k:'g',t:'Giờ'},{k:'tx',t:'Tài xế',f:v=>crew(v,[])},{k:'px',t:'Phụ xe',f:v=>crew([],v)},
+    {k:'n',t:'Số NS',n:1,f:(v,r)=>(!r.tx.length||(r.tx.length<2&&first[3]==='Xe khách'))?chip(v+' ⚠','red'):v},
+    {k:'sc',t:'Scan',f:v=>v===1?chip('✓','green'):(v===0?chip('✗','red'):'')},{k:'l',t:'Hồ sơ',f:link}],
+    Object.values(trips).map(t=>({d:t.d,t:t.t,g:t.g,tx:t.tx,px:t.px,n:t.tx.length+t.px.length,sc:t.sc,l:scanMap[t.d]})),{sort:{k:'d',d:-1}});
 }
 
 /* ====================== THEO NGÀY ====================== */
