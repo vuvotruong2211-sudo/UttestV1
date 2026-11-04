@@ -278,6 +278,14 @@ tr.flash-bad td{animation:flashBad 1.4s var(--ease)}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+.pkbtn{min-width:160px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px}
+.pkbtn.on{border-color:var(--accent);color:var(--accent);font-weight:600}
+.pklist{max-height:52vh;overflow:auto;margin-top:10px;border:1px solid var(--line);border-radius:10px}
+.pkit{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--line)}
+.pkit:last-child{border-bottom:0}
+.pkit.on{background:var(--accent-soft)}
+.pkit .m{color:var(--muted);font-size:12px;white-space:nowrap}
+.pkit mark{background:none;color:var(--accent);font-weight:700}
 </style>
 </head>
 
@@ -334,6 +342,7 @@ tr.flash-bad td{animation:flashBad 1.4s var(--ease)}
     <button class="tab" data-t="ledger">Sổ quỹ NV</button>
     <button class="tab" data-t="quy">Nộp quỹ <span class="cnt hide" id="cntQuy"></span></button>
     <button class="tab" data-t="review">Kiểm duyệt <span class="cnt hide" id="cntReview"></span></button>
+    <button class="tab hide" data-t="risk" id="tabRisk">Rủi ro <span class="cnt hide" id="cntRisk"></span></button>
     <button class="tab hide" data-t="log" id="tabLog">Nhật ký</button>
     <span class="tab-ind" id="tabInd"></span>
     </nav>
@@ -373,6 +382,13 @@ tr.flash-bad td{animation:flashBad 1.4s var(--ease)}
 
   <!-- SỔ QUỸ -->
   <section id="t-ledger" class="hide">
+    <div class="card hide" id="chotCard" style="margin-bottom:12px">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
+        <div><h3 style="margin:0">🔒 Chốt sổ</h3><div class="sub" id="chotTxt"></div></div>
+        <button class="primary" id="btnChot">Xem trước &amp; chốt sổ tháng</button>
+      </div>
+      <div id="sauChot" class="hide" style="margin-top:10px"></div>
+    </div>
     <div class="sub" style="margin-bottom:10px">Ngưỡng giữ tiền qua đêm: <b class="ngTxt"></b>. Bấm vào 1 dòng để xem giao dịch.</div>
     <div class="tw"><table>
       <thead><tr><th>Nhân viên</th><th>VP</th><th class="num">Tồn đầu kỳ</th><th class="num">Thu</th><th class="num">Chi</th><th class="num">Nộp quỹ</th><th class="num">Tồn cuối kỳ</th><th class="num">Đêm vượt ngưỡng</th><th class="num">Nộp chờ XN</th><th class="num">Chờ kiểm</th><th class="num">Cần sửa</th><th class="num">Cảnh báo</th></tr></thead>
@@ -384,11 +400,11 @@ tr.flash-bad td{animation:flashBad 1.4s var(--ease)}
   <!-- NỘP QUỸ -->
   <section id="t-quy" class="hide">
     <div class="kpis" id="quyKpis"></div>
-    <div class="grid2" style="margin-bottom:12px">
+    <div class="grid2" style="margin-bottom:12px" id="quyRecvBox">
       <div class="card"><h3>Theo người nhận</h3><div class="tw"><table><thead><tr><th>Người nhận</th><th class="num">NV báo nộp</th><th class="num">Đã nhận</th><th class="num">Chờ XN</th><th class="num">Sai lệch</th></tr></thead><tbody id="quyRecv"></tbody></table></div></div>
     </div>
     <div class="filters">
-      <select id="qNV"><option value="">Tất cả NV</option></select>
+      <select id="qNV" class="hide"><option value="">Tất cả NV</option></select><button class="pkbtn" data-pick="qNV">👤 Tất cả NV ▾</button>
       <select id="qSt"><option value="cho">Chờ xác nhận</option><option value="Đã nhận">Đã nhận</option><option value="Sai lệch">Sai lệch</option><option value="SUA_SAU_XN">Sửa sau khi XN</option><option value="*">Tất cả</option></select>
       <span class="sub" id="quySum"></span>
     </div>
@@ -402,7 +418,7 @@ tr.flash-bad td{animation:flashBad 1.4s var(--ease)}
   <section id="t-review" class="hide">
     <div class="filters">
       <span class="chip hide" id="dayChip"><span id="dayChipTxt"></span><button id="dayChipX" title="Bỏ lọc ngày">✕</button></span>
-      <select id="fNV"><option value="">Tất cả NV</option></select>
+      <select id="fNV" class="hide"><option value="">Tất cả NV</option></select><button class="pkbtn" data-pick="fNV">👤 Tất cả NV ▾</button>
       <select id="fLoai"><option value="">THU + CHI</option><option>THU</option><option>CHI</option></select>
       <select id="fStatus"><option value="*">Mọi trạng thái</option></select>
       <label><input type="checkbox" id="fWarn"> Chỉ dòng có cảnh báo</label>
@@ -415,6 +431,34 @@ tr.flash-bad td{animation:flashBad 1.4s var(--ease)}
       <tbody id="reviewBody"></tbody>
     </table></div>
     <button class="more hide" id="btnMore">Xem thêm</button>
+  </section>
+
+  <!-- RỦI RO -->
+  <section id="t-risk" class="hide">
+    <div class="card" style="margin-bottom:12px">
+      <h3>Chấm điểm rủi ro nhân viên <small id="riskSum"></small></h3>
+      <div class="sub" id="riskBase" style="margin-bottom:10px"></div>
+      <div class="tw"><table>
+        <thead><tr><th>Nhân viên</th><th class="num">Điểm</th><th>Mức</th><th>Lý do</th><th class="num">Bán vé</th><th class="num">Hoàn/hủy</th><th class="num">Khách CK</th></tr></thead>
+        <tbody id="riskBody"></tbody>
+      </table></div>
+      <div class="note" style="margin-top:8px">Điểm cao = cần xem kỹ, không phải kết luận gian lận. So sánh với mặt bằng NV cùng kỳ (và cùng văn phòng nếu đang lọc). Bấm 1 dòng để xem giao dịch.</div>
+    </div>
+    <div class="card" style="margin-bottom:12px">
+      <h3>SĐT đáng chú ý <small>(hoàn/hủy lặp lại, nhiều NV cùng dùng)</small></h3>
+      <div class="tw"><table>
+        <thead><tr><th>SĐT</th><th class="num">Hoàn/hủy (lần · tiền)</th><th class="num">Khách CK (lần · tiền)</th><th>Nhân viên</th><th>Gần nhất</th><th>Lý do</th></tr></thead>
+        <tbody id="phoneBody"></tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h3>Chi phí theo biển số xe</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Biển số</th><th class="num">Chi xe (chuyến)</th><th class="num">Nhiên liệu</th><th class="num">Sửa chữa</th><th class="num">Tải / bốc xếp</th><th class="num">Tổng</th><th class="num">Lần</th></tr></thead>
+        <tbody id="plateBody"></tbody><tfoot id="plateFoot"></tfoot>
+      </table></div>
+      <div class="note" id="plateNote" style="margin-top:8px"></div>
+    </div>
   </section>
 
   <!-- NHẬT KÝ -->
@@ -439,6 +483,20 @@ tr.flash-bad td{animation:flashBad 1.4s var(--ease)}
   <div class="row" id="mStatusRow">Trạng thái<select id="mStatus"></select></div>
   <div class="row">Ghi chú<textarea id="mNote" placeholder="VD: sai số tiền, thiếu SĐT khách…"></textarea></div>
   <div class="btns"><button class="ghost" data-close>Huỷ</button><button class="primary" id="mSave">Lưu</button></div>
+</div></div>
+
+<div class="modal" id="mPick"><div class="box">
+  <h4>Chọn nhân viên</h4>
+  <input id="pkQ" type="search" placeholder="Gõ tên NV hoặc văn phòng… (không cần dấu)" autocomplete="off" style="width:100%;margin-top:8px">
+  <div id="pkList" class="pklist"></div>
+  <div class="note" style="margin-top:6px">↑ ↓ để chọn · Enter để xác nhận · Esc để đóng</div>
+</div></div>
+
+<div class="modal" id="mChot"><div class="box" style="max-width:620px">
+  <h4 id="chTitle">Chốt sổ</h4>
+  <div id="chBody" style="font-size:13px;max-height:60vh;overflow:auto"></div>
+  <label style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:13px"><input type="checkbox" id="chOk" style="margin-top:3px"> <span>Tôi đã kiểm tra. Sau khi chốt, dữ liệu kỳ này được cố định trong TỔNG HỢP và <b>không duyệt / sửa được nữa</b>.</span></label>
+  <div class="btns"><button class="ghost" data-close>Huỷ</button><button class="primary" id="chGo" disabled>Chốt sổ</button></div>
 </div></div>
 
 <div class="modal" id="mBulk"><div class="box">
@@ -539,14 +597,19 @@ function applySession(s){
   $('meName').textContent = s.ten; $('meRole').textContent = s.perm.label; $('meRole').className = 'role ' + s.perm.role;
   $('btnGom').classList.toggle('hide', !s.perm.gom);
   $('tabLog').classList.toggle('hide', !s.perm.log);
+  $('tabRisk').classList.toggle('hide', !s.perm.ruiro);
   $('btnBulk').classList.toggle('hide', !s.perm.duyet);
   document.querySelectorAll('.colAct').forEach(x => x.classList.toggle('hide', !s.perm.duyet));
-  const lim = s.perm.days > 0;
+  const lim = s.perm.days > 0, tong = !!s.perm.tong;
   document.querySelectorAll('#presets .full').forEach(b => b.classList.toggle('hide', lim));
-  $('vipBanner').classList.toggle('hide', !lim);
-  $('vipBanner').textContent = lim ? `Quyền ${s.perm.label}: chỉ xem ${s.perm.days} ngày gần nhất.` : '';
+  const p7 = document.querySelector('#presets [data-p="7d"]'); p7.textContent = lim ? 'D-' + (s.perm.days - 1) + ' → nay' : '7 ngày';
+  $('vipBanner').classList.add('hide');
+  // Chỉ VVIP thấy số tổng. Vai trò khác: chỉ sổ quỹ từng NV (+ duyệt / xác nhận quỹ nếu có quyền)
+  const tabOk = { overview: tong, close: true, ledger: true, quy: tong || s.perm.quy, review: tong || s.perm.duyet, risk: !!s.perm.ruiro, log: !!s.perm.log };
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('hide', !tabOk[b.dataset.t]));
+  ['quyKpis', 'quyRecvBox'].forEach(id => $(id).classList.toggle('hide', !tong));
   setPreset(lim ? '7d' : 'month');
-  if (document.querySelector('.tab.on').classList.contains('hide')) document.querySelector('.tab[data-t="overview"]').click();
+  if (document.querySelector('.tab.on').classList.contains('hide')) document.querySelector(`.tab[data-t="${tong ? 'overview' : 'ledger'}"]`).click();
   requestAnimationFrame(moveInd);
   load();
 }
@@ -567,7 +630,7 @@ function setPreset(p){
   const td = localToday(), t = dayToDate(td), y = t.getUTCFullYear(), m = t.getUTCMonth();
   let a, b;
   if (p === 'today'){ a = b = td; }
-  else if (p === '7d'){ a = td - 6; b = td; }
+  else if (p === '7d'){ const n = P().days > 0 ? P().days : 7; a = td - n + 1; b = td; }
   else if (p === 'month'){ a = Date.UTC(y,m,1)/864e5; b = Date.UTC(y,m+1,0)/864e5; }
   else if (p === 'lastmonth'){ a = Date.UTC(y,m-1,1)/864e5; b = Date.UTC(y,m,0)/864e5; }
   else if (p === 'quarter'){ const q = Math.floor(m/3)*3; a = Date.UTC(y,q,1)/864e5; b = Date.UTC(y,q+3,0)/864e5; }
@@ -600,6 +663,8 @@ function prepare(){
   NV_VP = {}; D.nv.forEach(n => NV_VP[n.ten] = n.vp);
   document.querySelectorAll('.ngTxt').forEach(x => x.textContent = fmt(D.nguong));
   ROWS = D.rows.map(a => ({thRow:a[0], nv:a[1], sheet:a[2], srcRow:a[3], day:a[4], loai:a[5], nd:a[6], tien:a[7], dg:a[8], kt:a[9], gc:a[10], vp:a[11] || NV_VP[a[1]] || '', flag:a[12]||'', quy:a[13]||'', quyBy:a[14]||'', loaiGoc: a[15] == null ? a[5] : a[15]}));
+  const CD = (D.chot && D.chot.den) || 0;
+  ROWS.forEach(r => r.chot = !!CD && r.day != null && r.day <= CD);
   const seen = {};
   ROWS.forEach(r => { const k = [r.nv,r.day,r.nd,r.tien].join('|'); seen[k] = (seen[k]||0) + 1; });
   const dmNames = new Set(D.nv.map(n => n.ten));
@@ -691,7 +756,7 @@ function computeLedger(){
 }
 
 /* ================== RENDER ================== */
-function renderAll(){ computeLedger(); renderOverview(); renderClose(); renderLedger(); renderQuy(); renderReview(); if (P().log) renderLog(); }
+function renderAll(){ computeLedger(); if (P().tong){ renderOverview(); renderChot(); } renderClose(); renderLedger(); renderQuy(); renderReview(); if (P().log) renderLog(); if (P().ruiro) renderRisk(); }
 
 function renderOverview(){
   const rs = vpRows().filter(r => r.day != null && typeof r.tien === 'number');
@@ -795,7 +860,7 @@ function renderLedger(){
       <td class="num ${o.dem?'neg':''}">${o.dem||''}</td><td class="num">${o.nopCho||''}</td>
       <td class="num">${o.pend||''}</td><td class="num ${o.sai?'neg':''}">${o.sai||''}</td><td class="num ${o.warn?'neg':''}">${o.warn||''}</td></tr>`;
   }).join('') || '<tr><td colspan="12" class="empty">Không có nhân viên</td></tr>';
-  $('ledgerFoot').innerHTML = `<tr><td colspan="2">Tổng</td><td class="num">${fmt(s.dau)}</td><td class="num">${fmt(s.thu)}</td><td class="num">${fmt(s.chi)}</td><td class="num">${fmt(s.nop)}</td><td class="num">${fmt(s.cuoi)}</td><td class="num">${s.dem}</td><td class="num">${s.nopCho}</td><td class="num">${s.pend}</td><td class="num">${s.sai}</td><td class="num">${s.warn}</td></tr>`;
+  $('ledgerFoot').innerHTML = !P().tong ? '' : `<tr><td colspan="2">Tổng</td><td class="num">${fmt(s.dau)}</td><td class="num">${fmt(s.thu)}</td><td class="num">${fmt(s.chi)}</td><td class="num">${fmt(s.nop)}</td><td class="num">${fmt(s.cuoi)}</td><td class="num">${s.dem}</td><td class="num">${s.nopCho}</td><td class="num">${s.pend}</td><td class="num">${s.sai}</td><td class="num">${s.warn}</td></tr>`;
 }
 
 /* ---- Nộp quỹ ---- */
@@ -814,6 +879,7 @@ function quyRows(){
   }).sort((a,b) => (b.day??0) - (a.day??0) || a.nv.localeCompare(b.nv,'vi'));
 }
 function renderQuy(){
+  syncPickBtns();
   const all = vpRows().filter(r => r.loai === 'CHI' && isNopQuy(r) && typeof r.tien === 'number');
   const sum = f => all.filter(f).reduce((s,r)=>s+r.tien,0), cnt = f => all.filter(f).length;
   const cho = r => !r.quy || r.quy === 'SUA_SAU_XN';
@@ -829,7 +895,7 @@ function renderQuy(){
   $('quyRecv').innerHTML = Object.entries(rv).sort((a,b)=>b[1].t-a[1].t).map(([k,o]) => `<tr><td>${esc(k)}</td><td class="num">${fmt(o.t)}</td><td class="num pos">${fmt(o.ok)}</td><td class="num">${fmt(o.cho)}</td><td class="num ${o.sai?'neg':''}">${fmt(o.sai)}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">Không có dòng nộp quỹ trong kỳ</td></tr>';
 
   const list = quyRows();
-  $('quySum').textContent = `${list.length} dòng · ${fmt(list.reduce((s,r)=>s+(+r.tien||0),0))} đ`;
+  $('quySum').textContent = P().tong ? `${list.length} dòng · ${fmt(list.reduce((s,r)=>s+(+r.tien||0),0))} đ` : `${list.length} dòng`;
   const can = P().quy;
   $('quyBody').innerHTML = list.map(r => `<tr data-th="${r.thRow}">
     <td class="c-main" style="white-space:nowrap">${dayStr(r.day)}</td>
@@ -837,7 +903,7 @@ function renderQuy(){
     <td class="num c-amt"><b>${fmt(r.tien)}</b></td>
     <td class="c-full" data-l="${r.dg ? 'Nộp cho:' : ''}">${esc(r.dg)}</td>
     <td class="c-full">${quyBadge(r.quy)}${r.quyBy?`<div class="note">${esc(r.quyBy)}</div>`:''}</td>
-    <td class="c-act">${can ? `<div class="act"><button class="quyok" data-qok="${r.thRow}">✓ Đã nhận</button><button class="quysai" data-qsai="${r.thRow}">Sai lệch</button></div>` : ''}</td>
+    <td class="c-act">${r.chot ? '<span class="badge b-grey">🔒 Đã chốt</span>' : can ? `<div class="act"><button class="quyok" data-qok="${r.thRow}">✓ Đã nhận</button><button class="quysai" data-qsai="${r.thRow}">Sai lệch</button></div>` : ''}</td>
   </tr>`).join('') || '<tr><td colspan="6" class="empty">Không có dòng nào khớp bộ lọc</td></tr>';
   const n = all.filter(cho).length;
   setCnt($('cntQuy'), n, n > 0 && can);
@@ -846,6 +912,7 @@ function renderQuy(){
 /* ---- Kiểm duyệt ---- */
 function reviewRows(){
   const nv = $('fNV').value, lo = $('fLoai').value, st = $('fStatus').value, w = $('fWarn').checked, q = $('fQ').value.trim().toLowerCase();
+  const qd = q.replace(/\D/g, '');  // tìm SĐT bỏ qua dấu cách / dấu chấm
   return vpRows().filter(r => {
     if (revDay != null && r.day !== revDay) return false;
     if (nv && r.nv !== nv) return false;
@@ -854,19 +921,20 @@ function reviewRows(){
     if (st === 'other' && STATUS_MAP[r.kt]) return false;
     if (st !== '*' && st !== 'pending' && st !== 'other' && r.kt !== st) return false;
     if (w && !r.warns.length && !r.hard) return false;
-    if (q && !(r.nd + ' ' + r.dg + ' ' + r.gc + ' ' + r.nv).toLowerCase().includes(q)) return false;
+    if (q && !(r.nd + ' ' + r.dg + ' ' + r.gc + ' ' + r.nv).toLowerCase().includes(q) && !(qd.length >= 6 && r.dg.replace(/\D/g, '').includes(qd))) return false;
     return true;
   }).sort((a,b) => (b.hard - a.hard) || (b.warns.length>0) - (a.warns.length>0) || (b.day??1e9) - (a.day??1e9) || a.nv.localeCompare(b.nv,'vi') || a.srcRow - b.srcRow);
 }
 function renderReview(){
+  syncPickBtns();
   const list = reviewRows();
   const thu = list.filter(r=>r.loai==='THU').reduce((s,r)=>s+(+r.tien||0),0), chi = list.filter(r=>r.loai==='CHI').reduce((s,r)=>s+(+r.tien||0),0);
-  $('reviewSum').textContent = `${list.length} dòng · Thu ${fmt(thu)} · Chi ${fmt(chi)}`;
+  $('reviewSum').textContent = P().tong ? `${list.length} dòng · Thu ${fmt(thu)} · Chi ${fmt(chi)}` : `${list.length} dòng`;
   $('dayChip').classList.toggle('hide', revDay == null); $('dayChipTxt').textContent = 'Ngày ' + dayStr(revDay);
   const nPend = vpRows().filter(r => (pending(r) && r.warns.length) || r.hard).length;
   setCnt($('cntReview'), nPend, nPend > 0);
   const can = P().duyet;
-  const okable = list.filter(r => r.kt !== 'OK' && !r.warns.length && !r.hard).length;
+  const okable = list.filter(r => r.kt !== 'OK' && !r.warns.length && !r.hard && !r.chot).length;
   $('btnBulk').textContent = `Duyệt OK ${okable} dòng không cảnh báo`; $('btnBulk').disabled = !okable;
   $('reviewBody').innerHTML = list.slice(0, shown).map(r => `<tr data-th="${r.thRow}">
     <td class="c-main" style="white-space:nowrap">${r.day==null?'<span class="neg">Thiếu ngày</span>':dayStr(r.day)}</td>
@@ -877,7 +945,7 @@ function renderReview(){
     <td class="c-full">${esc(r.dg)}</td>
     <td class="c-full">${r.flag?`<span class="flag">${esc(r.flag)}</span>`:''}${r.quy==='SUA_SAU_XN'?'<span class="flag">Nộp quỹ sửa sau khi XN</span>':''}${r.warns.map(x=>`<span class="warn">${esc(x)}</span>`).join('')}</td>
     <td class="c-full">${badge(r.kt)}${r.gc?`<div class="note">${esc(r.gc)}</div>`:''}</td>
-    <td class="c-act ${can?'':'hide'}"><div class="act"><button class="okb" data-ok="${r.thRow}" aria-label="Duyệt OK">✓ OK</button><button class="saib" data-edit="${r.thRow}" aria-label="Đánh dấu sai và ghi chú">Sai</button></div></td>
+    <td class="c-act ${can?'':'hide'}">${r.chot ? '<span class="badge b-grey">🔒 Đã chốt</span>' : `<div class="act"><button class="okb" data-ok="${r.thRow}" aria-label="Duyệt OK">✓ OK</button><button class="saib" data-edit="${r.thRow}" aria-label="Đánh dấu sai và ghi chú">Sai</button></div>`}</td>
   </tr>`).join('') || '<tr><td colspan="9" class="empty">Không có dòng nào khớp bộ lọc</td></tr>';
   $('btnMore').classList.toggle('hide', list.length <= shown);
   $('btnMore').textContent = `Xem thêm (${list.length - shown} dòng)`;
@@ -898,7 +966,7 @@ function renderLog(){
 
 /* ================== GHI ================== */
 const byTh = th => ROWS.find(r => r.thRow === th);
-const payload = (r, status, note) => ({thRow:r.thRow, sheet:r.sheet, srcRow:r.srcRow, amount:r.tien, noiDung:r.nd, status, note});
+const payload = (r, status, note) => ({thRow:r.thRow, sheet:r.sheet, srcRow:r.srcRow, day:r.day, amount:r.tien, noiDung:r.nd, status, note});
 async function save(items){
   busy(true);
   try{
@@ -954,10 +1022,246 @@ $('fQ').oninput = () => { shown = 200; clearTimeout($('fQ')._t); $('fQ')._t = se
 $('btnMore').onclick = () => { shown += 200; renderReview(); };
 $('dayChipX').onclick = () => { revDay = null; renderReview(); };
 
+/* ================== RỦI RO ================== */
+// SĐT di động VN (đầu 3/5/7/8/9), chấp nhận có/không số 0, +84, dấu cách, dấu chấm
+function phonesOf(s){
+  const t = String(s || '').replace(/[\s.\-()]/g, '');
+  const out = []; let m; const re = /(?:\+?84|0)?([35789]\d{8})(?!\d)/g;
+  while ((m = re.exec(t))) { const p = '0' + m[1]; if (!out.includes(p)) out.push(p); }
+  return out;
+}
+// Biển số: 51B-123.45, 51B12345, 49F 00123, 51LD-12345
+function plateOf(s){
+  const m = String(s || '').toUpperCase().match(/(?:^|[^0-9A-Z])(\d{2}[A-Z]{1,2}\d?)[\s\-.]*(\d{3}\.?\d{2}|\d{4})(?![0-9])/);
+  return m ? m[1] + '-' + m[2].replace('.', '') : '';
+}
+const isXeChi = r => r.loai === 'CHI' && !isNopQuy(r) && !isCK(r) && !isHoan(r) && !/grab|hỗ trợ khách/i.test(r.nd) &&
+  /xe|nhiên liệu|dầu|xăng|sửa|bảo dưỡng|tải|bốc|lốp|rửa/i.test(r.nd);
+const isBanVe = r => r.loai === 'THU' && /bán vé/i.test(r.nd);
+const isKhac  = r => r.loai === 'CHI' && /khác/i.test(r.nd);
+const pct = x => (x * 100).toFixed(x < 0.1 ? 1 : 0).replace('.', ',') + '%';
+const median = a => { if (!a.length) return 0; const b = a.slice().sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m-1] + b[m]) / 2; };
+
+function computeRisk(){
+  const rs = vpRows().filter(r => typeof r.tien === 'number');
+  // ---- SĐT ----
+  const ph = {};
+  rs.forEach(r => {
+    if (!(isHoan(r) || isCK(r))) return;
+    phonesOf(r.dg).forEach(p => {
+      const o = ph[p] = ph[p] || {p, hoanN:0, hoanT:0, ckN:0, ckT:0, nv:new Set(), last:null};
+      if (isHoan(r)){ o.hoanN++; o.hoanT += r.tien; } else { o.ckN++; o.ckT += r.tien; }
+      o.nv.add(r.nv); if (r.day != null && (o.last == null || r.day > o.last)) o.last = r.day;
+    });
+  });
+  const phones = Object.values(ph).map(o => {
+    const why = [];
+    if (o.hoanN >= 2) why.push(`Hoàn/hủy ${o.hoanN} lần`);
+    if (o.nv.size >= 2) why.push(`${o.nv.size} NV cùng dùng`);
+    if (o.hoanN + o.ckN >= 3 && o.hoanN < 2) why.push(`${o.hoanN + o.ckN} giao dịch hoàn/CK`);
+    return Object.assign(o, {why, score: o.hoanN * 2 + (o.nv.size - 1) * 2 + o.ckN});
+  }).filter(o => o.why.length).sort((a, b) => b.score - a.score || (b.hoanT + b.ckT) - (a.hoanT + a.ckT));
+  const nvPhoneFlag = {};
+  phones.forEach(o => o.nv.forEach(n => nvPhoneFlag[n] = (nvPhoneFlag[n] || 0) + 1));
+
+  // ---- Chỉ số từng NV ----
+  const st = {};
+  rs.forEach(r => {
+    const o = st[r.nv] = st[r.nv] || {nv:r.nv, vp:r.vp, ve:0, thu:0, hoan:0, ck:0, chiphi:0, khac:0, hoanNoPh:0, ckNoPh:0, hard:0, days:{}};
+    if (r.loai === 'THU'){ o.thu += r.tien; if (isBanVe(r)){ o.ve += r.tien; if (r.day != null) o.days[r.day] = (o.days[r.day] || 0) + r.tien; } }
+    else if (r.loai === 'CHI'){
+      if (isHoan(r)){ o.hoan += r.tien; if (!phonesOf(r.dg).length) o.hoanNoPh++; }
+      else if (isCK(r)){ o.ck += r.tien; if (!phonesOf(r.dg).length) o.ckNoPh++; }
+      else if (!isNopQuy(r)){ o.chiphi += r.tien; if (isKhac(r)) o.khac += r.tien; }
+    }
+    if (r.hard) o.hard++;
+  });
+  const list = Object.values(st).filter(o => o.ve > 0 || o.thu > 0);
+  const M = [
+    {k:'hoan',   lb:'Hoàn/hủy',     v:o => o.hoan / (o.ve || o.thu), min:0.03},
+    {k:'ck',     lb:'Khách CK',     v:o => o.ck / (o.ve || o.thu),   min:0.10},
+    {k:'chiphi', lb:'Chi phí/thu',  v:o => o.chiphi / o.thu,         min:0.05},
+    {k:'khac',   lb:'Chi khác/thu', v:o => o.khac / o.thu,           min:0.02}
+  ];
+  const base = {};
+  M.forEach(m => base[m.k] = median(list.map(m.v)));
+  const enough = list.length >= 4;
+  const ledgerBy = {}; LEDGER.forEach(l => ledgerBy[l.nv] = l);
+  const span = D.toDay - D.fromDay + 1;
+
+  list.forEach(o => {
+    const why = []; let sc = 0;
+    const add = (n, txt, lvl) => { sc += n; why.push({txt, lvl: lvl || (n >= 2 ? 'red' : 'amber')}); };
+    if (enough) M.forEach(m => {
+      const v = m.v(o), b = base[m.k];
+      if (!isFinite(v) || v - b < m.min) return;
+      if (b <= 0.005) add(2, `${m.lb} ${pct(v)} (NV khác gần như 0)`);
+      else if (v >= 2 * b) add(2, `${m.lb} ${pct(v)} – gấp ${(v / b).toFixed(1).replace('.', ',')} lần mặt bằng ${pct(b)}`);
+      else if (v >= 1.5 * b) add(1, `${m.lb} ${pct(v)} – cao hơn mặt bằng ${pct(b)}`);
+    });
+    if (o.hard) add(Math.min(6, o.hard * 3), `${o.hard} cờ kiểm soát (sửa sau duyệt / tự ghi OK)`, 'red');
+    const l = ledgerBy[o.nv];
+    if (l && l.dem) add(Math.min(3, l.dem), `${l.dem} đêm giữ quá ${fmtM(D.nguong)}`);
+    if (l && l.cuoi < 0) add(2, 'Âm quỹ');
+    if (o.hoanNoPh) add(Math.min(2, o.hoanNoPh), `${o.hoanNoPh} lần hoàn/hủy không có SĐT`);
+    if (o.ckNoPh) add(Math.min(2, o.ckNoPh), `${o.ckNoPh} lần khách CK không có SĐT`);
+    if (nvPhoneFlag[o.nv]) add(2, `Liên quan ${nvPhoneFlag[o.nv]} SĐT đáng chú ý`, 'red');
+    // So với chính mình: cần kỳ ≥ 14 ngày
+    if (span >= 14){
+      const ds = Object.keys(o.days).map(Number);
+      const cut = Math.min(D.toDay, D.today) - 6;
+      const rec = ds.filter(d => d >= cut), old = ds.filter(d => d < cut);
+      if (rec.length >= 3 && old.length >= 5){
+        const a = rec.reduce((s, d) => s + o.days[d], 0) / rec.length, b = old.reduce((s, d) => s + o.days[d], 0) / old.length;
+        if (b > 0 && a < b * 0.6) add(1, `Bán vé 7 ngày gần nhất giảm ${Math.round((1 - a / b) * 100)}% so với trước`);
+      }
+    }
+    o.score = sc; o.why = why;
+    o.level = sc >= 5 ? 'Cao' : sc >= 3 ? 'Trung bình' : sc >= 1 ? 'Theo dõi' : 'Ổn';
+    o.hoanR = o.hoan / (o.ve || o.thu || 1); o.ckR = o.ck / (o.ve || o.thu || 1);
+  });
+  list.sort((a, b) => b.score - a.score || b.hoanR - a.hoanR);
+
+  // ---- Biển số ----
+  const pl = {}; let noPlateN = 0, noPlateT = 0;
+  rs.filter(isXeChi).forEach(r => {
+    const p = plateOf(r.dg);
+    if (!p){ noPlateN++; noPlateT += r.tien; return; }
+    const o = pl[p] = pl[p] || {p, xe:0, nl:0, sc:0, bx:0, n:0};
+    const c = /nhiên liệu|dầu|xăng/i.test(r.nd) ? 'nl' : /sửa|bảo dưỡng|lốp/i.test(r.nd) ? 'sc' : /tải|bốc/i.test(r.nd) ? 'bx' : 'xe';
+    o[c] += r.tien; o.n++;
+  });
+  const plates = Object.values(pl).map(o => (o.t = o.xe + o.nl + o.sc + o.bx, o)).sort((a, b) => b.t - a.t);
+  return {list, base, enough, phones, plates, noPlateN, noPlateT, xeTotal: rs.filter(isXeChi).length};
+}
+
+function renderRisk(){
+  const R = computeRisk();
+  const lvCls = {'Cao':'b-red', 'Trung bình':'b-amber', 'Theo dõi':'b-grey', 'Ổn':'b-green'};
+  const flagged = R.list.filter(o => o.score > 0);
+  const nCao = R.list.filter(o => o.level === 'Cao').length;
+  $('cntRisk').textContent = nCao; $('cntRisk').classList.toggle('hide', !nCao);
+  $('riskBase').innerHTML = R.enough
+    ? `Mặt bằng chung (trung vị ${R.list.length} NV trong kỳ): hoàn/hủy <b>${pct(R.base.hoan)}</b> doanh thu vé · khách CK <b>${pct(R.base.ck)}</b> · chi phí <b>${pct(R.base.chiphi)}</b> thu · chi khác <b>${pct(R.base.khac)}</b> thu`
+    : 'Cần ít nhất 4 NV có doanh thu trong kỳ để so sánh với mặt bằng chung.';
+  $('riskBody').innerHTML = flagged.map(o => `<tr class="click" data-nv="${esc(o.nv)}">
+    <td>${esc(o.nv)}<div class="note">${esc(o.vp)}</div></td>
+    <td class="num"><b>${o.score}</b></td><td><span class="badge ${lvCls[o.level]}">${o.level}</span></td>
+    <td>${o.why.map(w => `<span class="${w.lvl === 'red' ? 'flag' : 'warn'}">${esc(w.txt)}</span>`).join('')}</td>
+    <td class="num">${fmt(o.ve)}</td><td class="num">${pct(o.hoanR)}</td><td class="num">${pct(o.ckR)}</td></tr>`).join('')
+    || '<tr><td colspan="7" class="empty">Không NV nào có dấu hiệu bất thường trong kỳ</td></tr>';
+  $('riskSum').textContent = `${flagged.length}/${R.list.length} NV có điểm · ${nCao} mức Cao`;
+
+  $('phoneBody').innerHTML = R.phones.slice(0, 50).map(o => `<tr class="click" data-ph="${o.p}">
+    <td><b>${o.p}</b></td><td class="num">${o.hoanN ? o.hoanN + ' · ' + fmt(o.hoanT) : ''}</td><td class="num">${o.ckN ? o.ckN + ' · ' + fmt(o.ckT) : ''}</td>
+    <td>${esc([...o.nv].join(', '))}</td><td>${dayStr(o.last)}</td><td>${o.why.map(w => `<span class="warn">${esc(w)}</span>`).join('')}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="empty">Chưa có SĐT nào lặp lại bất thường</td></tr>';
+
+  const s = {xe:0, nl:0, sc:0, bx:0, t:0, n:0};
+  $('plateBody').innerHTML = R.plates.map(o => { Object.keys(s).forEach(k => s[k] += o[k]);
+    return `<tr><td><b>${esc(o.p)}</b></td><td class="num">${fmt(o.xe)}</td><td class="num">${fmt(o.nl)}</td><td class="num">${fmt(o.sc)}</td><td class="num">${fmt(o.bx)}</td><td class="num"><b>${fmt(o.t)}</b></td><td class="num">${o.n}</td></tr>`; }).join('')
+    || '<tr><td colspan="7" class="empty">Chưa có dòng chi xe nào ghi biển số</td></tr>';
+  $('plateFoot').innerHTML = R.plates.length ? `<tr><td>Tổng</td><td class="num">${fmt(s.xe)}</td><td class="num">${fmt(s.nl)}</td><td class="num">${fmt(s.sc)}</td><td class="num">${fmt(s.bx)}</td><td class="num">${fmt(s.t)}</td><td class="num">${s.n}</td></tr>` : '';
+  $('plateNote').innerHTML = R.xeTotal
+    ? `${R.xeTotal - R.noPlateN}/${R.xeTotal} dòng chi xe có ghi biển số.` + (R.noPlateN ? ` <b class="neg">${R.noPlateN} dòng (${fmt(R.noPlateT)} đ) chưa ghi biển số</b>: nhắc NV ghi biển số (vd 51B-123.45) vào cột SĐT/Diễn giải.` : '')
+    : 'Chưa có dòng chi xe / nhiên liệu / sửa chữa trong kỳ.';
+}
+
+$('riskBody').onclick = e => {
+  const tr = e.target.closest('tr[data-nv]'); if (!tr) return;
+  revDay = null; $('fQ').value = ''; $('fNV').value = tr.dataset.nv; $('fStatus').value = '*'; $('fWarn').checked = false; shown = 200; renderReview(); goTab('review');
+};
+$('phoneBody').onclick = e => {
+  const tr = e.target.closest('tr[data-ph]'); if (!tr) return;
+  revDay = null; $('fNV').value = ''; $('fStatus').value = '*'; $('fWarn').checked = false; $('fQ').value = tr.dataset.ph.slice(1); shown = 200; renderReview(); goTab('review');
+};
+
+/* ---- Ô chọn NV: gõ tên để tìm (không cần dấu) ---- */
+let PICK = null;
+const vnFold = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
+function syncPickBtns(){
+  document.querySelectorAll('[data-pick]').forEach(b => { const v = $(b.dataset.pick).value;
+    b.textContent = '👤 ' + (v || 'Tất cả NV') + ' ▾'; b.title = v || 'Chọn nhân viên'; b.classList.toggle('on', !!v); });
+}
+function openPicker(selId){
+  PICK = { sel: $(selId), i: 0, items: [] };
+  $('pkQ').value = ''; renderPick(); $('mPick').style.display = 'flex';
+  setTimeout(() => $('pkQ').focus(), 30);
+}
+function renderPick(){
+  const toks = vnFold($('pkQ').value).trim().split(/\s+/).filter(Boolean);
+  const led = {}; LEDGER.forEach(l => led[l.nv] = l);
+  const cnt = {}; ROWS.forEach(r => cnt[r.nv] = (cnt[r.nv] || 0) + 1);
+  PICK.items = [...PICK.sel.options].map(o => o.value).filter(v => {
+    if (!v) return !toks.length;
+    const hay = vnFold(v + ' ' + (NV_VP[v] || ''));
+    return toks.every(t => hay.includes(t));
+  });
+  // khớp đầu tên lên trước
+  if (toks.length) PICK.items.sort((a, b) => (vnFold(b).startsWith(toks[0]) - vnFold(a).startsWith(toks[0])) || a.localeCompare(b, 'vi'));
+  if (PICK.i >= PICK.items.length) PICK.i = 0;
+  const hl = v => { if (!toks.length) return esc(v); const f = vnFold(v), t = toks[0], k = f.indexOf(t);
+    return k < 0 ? esc(v) : esc(v.slice(0, k)) + '<mark>' + esc(v.slice(k, k + t.length)) + '</mark>' + esc(v.slice(k + t.length)); };
+  $('pkList').innerHTML = PICK.items.map((v, i) => `<div class="pkit ${i === PICK.i ? 'on' : ''}" data-i="${i}">
+    <span>${v ? hl(v) : '<b>Tất cả nhân viên</b>'}${v === PICK.sel.value ? ' ✓' : ''}</span>
+    <span class="m">${v ? esc(NV_VP[v] || '') + ' · ' + (cnt[v] || 0) + ' dòng' + (led[v] ? ' · tồn ' + fmtM(led[v].cuoi) : '') : ''}</span></div>`).join('')
+    || '<div class="empty">Không tìm thấy nhân viên</div>';
+  const on = $('pkList').querySelector('.pkit.on'); if (on) on.scrollIntoView({ block: 'nearest' });
+}
+function choosePick(i){
+  const v = PICK.items[i]; if (v === undefined) return;
+  PICK.sel.value = v; $('mPick').style.display = 'none';
+  PICK.sel.dispatchEvent(new Event('change')); syncPickBtns();
+}
+$('pkQ').oninput = () => { PICK.i = 0; renderPick(); };
+$('pkQ').onkeydown = e => {
+  if (e.key === 'ArrowDown'){ PICK.i = Math.min(PICK.i + 1, PICK.items.length - 1); renderPick(); e.preventDefault(); }
+  else if (e.key === 'ArrowUp'){ PICK.i = Math.max(PICK.i - 1, 0); renderPick(); e.preventDefault(); }
+  else if (e.key === 'Enter'){ choosePick(PICK.i); e.preventDefault(); }
+  else if (e.key === 'Escape'){ $('mPick').style.display = 'none'; }
+};
+$('pkList').onclick = e => { const d = e.target.closest('[data-i]'); if (d) choosePick(+d.dataset.i); };
+document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => openPicker(b.dataset.pick));
+
+/* ---- Chốt sổ (VVIP) ---- */
+let CHOT_PV = null;
+function renderChot(){
+  $('chotCard').classList.remove('hide');
+  const c = D.chot || {den:0, sauChot:{n:0, ds:[]}};
+  $('chotTxt').innerHTML = c.den ? `Đã chốt sổ đến hết <b>${dayStr(c.den)}</b>${c.by ? ' · ' + esc(c.by) + (c.at ? ' lúc ' + esc(c.at) : '') : ''}. Dữ liệu đến ngày này đã cố định, có thể xoá ở sheet NV.`
+    : 'Chưa chốt kỳ nào. Chốt sổ để cố định dữ liệu tháng cũ trước khi xoá ở sheet NV.';
+  const sc = c.sauChot || {n:0, ds:[]};
+  $('sauChot').classList.toggle('hide', !sc.n);
+  $('sauChot').innerHTML = sc.n ? `<span class="flag">⚠ ${sc.n} dòng thuộc kỳ đã chốt bị thêm / sửa ở sheet NV (không được gom)</span><div class="note">${sc.ds.map(esc).join(' · ')}${sc.n > sc.ds.length ? ' …' : ''}</div>` : '';
+}
+$('btnChot').onclick = async () => {
+  busy(true);
+  try{
+    const v = CHOT_PV = await apiT('xemTruocChotSo');
+    const bad = (n, txt) => n ? `<li class="neg"><b>${n}</b> ${txt}</li>` : `<li class="pos">✓ Không có ${txt}</li>`;
+    $('chTitle').textContent = `Chốt sổ đến hết ${dayStr(v.den)}`;
+    $('chBody').innerHTML = `<p>Kỳ chốt: <b>${dayStr(v.from)} → ${dayStr(v.den)}</b> · ${fmt(v.soDong)} dòng · Thu ${fmt(v.thu)} · Chi ${fmt(v.chi)} · Nộp quỹ ${fmt(v.nop)}</p>
+      <ul style="margin:6px 0 10px;padding-left:18px">${bad(v.choKiem, 'dòng chưa kiểm')}${bad(v.sai, 'dòng "Sai – cần sửa"')}${bad(v.coCo, 'dòng có cờ kiểm soát')}${bad(v.nopCho, 'lần nộp quỹ chưa xác nhận' + (v.nopCho ? ' (' + fmt(v.nopChoTien) + ' đ)' : ''))}
+      ${v.thieuNgay ? `<li class="neg"><b>${v.thieuNgay}</b> dòng thiếu ngày: không chốt, vẫn nằm trong dữ liệu đang chạy</li>` : ''}</ul>
+      <p class="note">Nên xử lý hết các mục đỏ trước khi chốt: sau khi chốt không duyệt / xác nhận được nữa.</p>
+      <div class="tw"><table><thead><tr><th>Nhân viên</th><th>VP</th><th class="num">Tồn cuối ${dayStr(v.den).slice(0,5)}</th></tr></thead><tbody>
+      ${v.nv.map(x => `<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td class="num ${x[2] < 0 || x[2] > D.nguong ? 'neg' : ''}">${fmt(x[2])}</td></tr>`).join('')}</tbody></table></div>`;
+    $('chOk').checked = false; $('chGo').disabled = true; $('chGo').textContent = `Chốt sổ đến hết ${dayStr(v.den)}`;
+    $('mChot').style.display = 'flex';
+  }catch(e){ toast('Chưa chốt được: ' + String(e.message || e).replace(/^Error:\s*/, ''), 7000); }
+  finally{ busy(false); }
+};
+$('chOk').onchange = () => $('chGo').disabled = !$('chOk').checked;
+$('chGo').onclick = async () => {
+  $('mChot').style.display = 'none'; busy(true);
+  try{ const m = await apiT('chotSoThang', CHOT_PV.den); busy(false); await load(); toast(m, 8000); }
+  catch(e){ busy(false); toast('Lỗi chốt sổ: ' + String(e.message || e).replace(/^Error:\s*/, ''), 8000); }
+};
+
 function goTab(t){ document.querySelector(`.tab[data-t="${t}"]`).click(); }
 document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
-  ['overview','close','ledger','quy','review','log'].forEach(t => $('t-'+t).classList.toggle('hide', t !== b.dataset.t));
+  ['overview','close','ledger','quy','review','risk','log'].forEach(t => $('t-'+t).classList.toggle('hide', t !== b.dataset.t));
   const sec = $('t-' + b.dataset.t); sec.classList.remove('enter'); void sec.offsetWidth; sec.classList.add('enter');
   moveInd(); b.scrollIntoView({block:'nearest', inline:'nearest', behavior: REDUCED ? 'auto' : 'smooth'});
   if (b.dataset.t === 'overview' && chart) chart.resize();
@@ -986,8 +1290,8 @@ $('mSave').onclick = () => {
   else save([payload(r, $('mStatus').value, $('mNote').value.trim())]);
 };
 $('btnBulk').onclick = () => {
-  const list = reviewRows().filter(r => r.kt !== 'OK' && !r.warns.length && !r.hard);
-  $('bulkInfo').innerHTML = `Sẽ ghi <b>OK</b> vào cột "Kế toán kiểm" cho <b>${list.length}</b> dòng đang lọc, không có cảnh báo, tổng <b>${fmt(list.reduce((s,r)=>s+(+r.tien||0),0))} đ</b>. Mọi dòng đều được ghi vào nhật ký duyệt với tên của bạn.`;
+  const list = reviewRows().filter(r => r.kt !== 'OK' && !r.warns.length && !r.hard && !r.chot);
+  $('bulkInfo').innerHTML = `Sẽ ghi <b>OK</b> vào cột "Kế toán kiểm" cho <b>${list.length}</b> dòng đang lọc, không có cảnh báo${P().tong ? `, tổng <b>${fmt(list.reduce((s,r)=>s+(+r.tien||0),0))} đ</b>` : ''}. Mọi dòng đều được ghi vào nhật ký duyệt với tên của bạn.`;
   openM('mBulk');
   $('bulkGo').onclick = () => { closeM('mBulk'); save(list.map(r => payload(r, 'OK', null))); };
 };
@@ -1003,10 +1307,10 @@ const MOCK_API = (() => {
   if (!MOCK) return {};
   let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const pick = a => a[Math.floor(rnd()*a.length)];
-  const ROLES = { VVIP:{label:'VVIP',days:0,duyet:true,quy:true,log:true,gom:true}, KE_TOAN:{label:'Kế toán',days:0,duyet:true,quy:false,log:false,gom:true},
-    THU_QUY:{label:'Thủ quỹ',days:7,duyet:false,quy:true,log:false,gom:false}, VIP:{label:'VIP',days:7,duyet:false,quy:false,log:false,gom:false} };
+  const ROLES = { VVIP:{label:'VVIP',days:0,duyet:true,quy:true,log:true,gom:true,ruiro:true,tong:true}, KE_TOAN:{label:'Kế toán',days:6,duyet:true,quy:false,log:false,gom:true,ruiro:false,tong:false},
+    THU_QUY:{label:'Thủ quỹ',days:6,duyet:false,quy:true,log:false,gom:false,ruiro:false,tong:false}, VIP:{label:'VIP',days:6,duyet:false,quy:false,log:false,gom:false,ruiro:false,tong:false} };
   const USERS = { vvip:['Anh Chủ','VVIP'], ketoan:['Ngọc KT','KE_TOAN'], thuquy:['Chị Thủ quỹ','THU_QUY'], vip:['Anh VIP','VIP'] };
-  const sessions = {};
+  const sessions = {}; let chotDen = 0;
   const perm = r => Object.assign({role:r}, ROLES[r]);
   const auth = t => { const u = sessions[t]; if (!u) throw new Error('PHIEN_HET_HAN'); return u; };
   const names = ['P.Nhí','Ngọc Trí','Hồ Trang','Thu Mai','Ngọc My','Ngọc Thiên','Yến Nhi','Thanh Nhàn','Thanh Diễm','Quỳnh Như','Ngọc Long','Anh Tuấn','Nhật Linh','Hoàng Huy','Kim Hoàng','Loan Ty','Hồng Xuyến','Mỹ Uyên','Duy Tiến','Huy con','Trường Duy','Minh Thảo','Quốc Phong'];
@@ -1032,6 +1336,17 @@ const MOCK_API = (() => {
       if (old){ r.quy = rnd()<.03 ? 'Sai lệch' : 'Đã nhận'; r.quyBy = 'Chị Thủ quỹ · ' + at(d,21); } }
   });
   // vài tình huống cần bắt
+  { const ex = (nv, d, loai, nd, tien, dg) => { row[nv]++; all.push({nv, sheet:nv, srcRow:row[nv], day:d, loai, nd, tien, dg, kt:'', gc:'', flag:'', quy:'', quyBy:''}); };
+    // 1 NV hoàn vé nhiều bất thường + SĐT lặp lại ở nhiều NV
+    for (let k = 0; k < 9; k++) ex('Mỹ Uyên', today - k*2, 'CHI', 'CHI - Hoàn / Hủy vé', 720000, k % 3 ? '0912 345 678' : '');
+    ex('Duy Tiến', today - 3, 'CHI', 'CHI - Hoàn / Hủy vé', 360000, '0912.345.678');
+    ex('Huy con', today - 4, 'CHI', 'CHI - KH chuyển khoản', 1080000, '0912345678');
+    // chi xe theo biển số
+    const xe = ['51B-123.45', '51B-678.90', '49F-001.23', '76B 456.78'];
+    for (let d = today - 20; d <= today; d++) xe.forEach((p, i) => {
+      if (rnd() < .5) ex(names[i * 3], d, 'CHI', pick(['CHI - Nhiên liệu', 'CHI - XE KHÁCH', 'CHI - XE TẢI', 'CHI - Sửa chữa, bảo dưỡng']), Math.round(rnd()*20+5)*50000, rnd() < .85 ? p : 'đổ dầu');
+    });
+  }
   const L = all.filter(r => r.day === today - 3);
   L[2].kt = 'OK'; L[2].flag = 'Sửa sau khi duyệt';
   L[7].kt = 'OK'; L[7].flag = 'OK không khớp log (tự ghi / sửa sau duyệt)';
@@ -1059,6 +1374,7 @@ const MOCK_API = (() => {
       });
       return { rows, nv, opening, startDay:start, fromDay:a, toDay:b, today, nguong:3000000,
         status:[{value:'',label:'Chưa kiểm',color:'grey'},{value:'OK',label:'OK',color:'green'},{value:'Sai – cần sửa',label:'Sai – cần sửa',color:'red'},{value:'Đã sửa',label:'Đã sửa',color:'amber'}],
+        chot:{den:chotDen, by:chotDen?'Anh Chủ':'', at:chotDen?'01/11 09:00':'', sauChot: s.perm.tong && chotDen ? {n:2, ds:['Thu Mai dòng 12 (' + dayStr(chotDen-3) + ')', 'P.Nhí dòng 40 (' + dayStr(chotDen-1) + ')']} : {n:0, ds:[]}},
         lastSync:'Gom lúc ' + new Date().toLocaleString('vi-VN') + ' (dữ liệu mẫu)', log: s.perm.log ? log.filter(l => { const d = logDay(l[0]); return d >= a && d <= b; }).reverse() : [], me:{ten:s.ten, perm:s.perm} };
     },
     capNhatTrangThai(t, items){ const s = auth(t); if (!s.perm.duyet) throw new Error('Không có quyền duyệt');
@@ -1068,6 +1384,14 @@ const MOCK_API = (() => {
       const by = s.ten + ' · ' + at(today, 21);
       items.forEach(it => { const r = all.find(x => x.thRow === it.thRow); log.push([at(today, 21), s.ten, s.perm.role, 'XÁC NHẬN QUỸ', r.nv, r.day, r.nd, r.tien, r.quy, it.status, it.note||'']); r.quy = it.status; r.quyBy = by; });
       return {ok:items.map(i=>i.thRow), loi:[], by}; },
+    xemTruocChotSo(t){ const s = auth(t); if (!s.perm.tong) throw new Error('Chỉ VVIP');
+      const from = chotDen ? chotDen + 1 : start, x = dayToDate(from), den = Date.UTC(x.getUTCFullYear(), x.getUTCMonth() + 1, 0) / 864e5;
+      if (den >= today) throw new Error('Tháng ' + dayStr(den).slice(3) + ' chưa kết thúc');
+      const K = all.filter(r => r.day >= from && r.day <= den);
+      return {from, den, chotTruoc:chotDen, soDong:K.length, thu:K.filter(r=>r.loai==='THU').reduce((a,r)=>a+r.tien,0), chi:K.filter(r=>r.loai==='CHI'&&!/Nộp quỹ/.test(r.nd)).reduce((a,r)=>a+r.tien,0),
+        nop:K.filter(r=>/Nộp quỹ/.test(r.nd)).reduce((a,r)=>a+r.tien,0), choKiem:K.filter(r=>!r.kt).length, sai:K.filter(r=>r.kt==='Sai – cần sửa').length, coCo:K.filter(r=>r.flag).length,
+        nopCho:K.filter(r=>/Nộp quỹ/.test(r.nd)&&!r.quy).length, nopChoTien:0, thieuNgay:0, nv:names.map(n=>[n, '', Math.round(rnd()*5e6)])}; },
+    chotSoThang(t, den){ const s = auth(t); if (!s.perm.tong) throw new Error('Chỉ VVIP'); chotDen = den; return 'Đã chốt sổ đến hết ' + dayStr(den) + ' (mẫu)'; },
     gomLaiTuDashboard(t){ auth(t); return 'Gom lúc ' + new Date().toLocaleTimeString('vi-VN') + ' · ' + all.length + ' dòng (mẫu)'; }
   };
 })();
