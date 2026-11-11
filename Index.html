@@ -7,6 +7,27 @@
 <title>Thu Chi PVSG – PVĐL</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+/* Báo lỗi ngay trên màn hình (thay vì trang trắng / đen không rõ lý do) */
+(function(){
+  var shown = 0;
+  function box(msg){
+    if (shown++ > 4) return;
+    var d = document.getElementById('bootErr');
+    if (!d){
+      d = document.createElement('div'); d.id = 'bootErr';
+      d.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;background:#c9372c;color:#fff;font:13px/1.45 system-ui,sans-serif;padding:10px 14px;border-radius:10px;white-space:pre-wrap;max-height:40vh;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.4)';
+      (document.body || document.documentElement).appendChild(d);
+    }
+    d.textContent += (d.textContent ? '\n' : '⚠ Lỗi trang (chụp màn hình gửi kỹ thuật):\n') + msg;
+  }
+  window.addEventListener('error', function(e){ box((e.message || 'Lỗi') + (e.lineno ? ' · dòng ' + e.lineno : '')); });
+  window.addEventListener('unhandledrejection', function(e){ var r = e.reason; box('Lỗi xử lý: ' + (r && r.message || r)); });
+  window.addEventListener('load', function(){
+    if (!window.__TC_OK) box('Mã trang không chạy hết: file Index.html trong Apps Script có thể bị DÁN THIẾU phần cuối. Mở Index.html → xoá hết → dán lại toàn bộ (file phải kết thúc bằng </html>) → Lưu → Triển khai phiên bản mới.');
+  });
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 /* ============ TOKENS ============ */
@@ -499,6 +520,32 @@ tr.bad td:first-child{box-shadow:inset 3px 0 0 var(--red)}
       <button class="primary" id="btnAudit">⬇ Tải biên bản kiểm soát (CSV)</button>
     </div>
     <div class="kpis" id="auKpis"></div>
+    <div class="card" style="margin-bottom:12px">
+      <h3>Phân tích doanh thu vé <small>(không cần nhập thêm dữ liệu)</small></h3>
+      <div class="sub" id="dtBase" style="margin-bottom:10px"></div>
+      <div class="grid2">
+        <div>
+          <div class="note" style="margin:0 0 6px"><b>NV bán thấp hơn đồng nghiệp cùng VP, cùng ngày</b></div>
+          <div class="tw" style="max-height:380px"><table>
+            <thead><tr><th>Nhân viên</th><th class="num">Ngày so sánh</th><th class="num">Bán TB/ngày</th><th class="num">Đồng nghiệp TB</th><th class="num">Tỷ lệ</th><th class="num">Ngày &lt; 50%</th></tr></thead>
+            <tbody id="dtPeer"></tbody>
+          </table></div>
+        </div>
+        <div>
+          <div class="note" style="margin:0 0 6px"><b>Ngày doanh thu vé thấp bất thường</b> (so với cùng thứ trong tuần)</div>
+          <div class="tw" style="max-height:380px"><table>
+            <thead><tr><th>VP</th><th>Ngày</th><th class="num">Bán vé</th><th class="num">Mức thường</th><th class="num">%</th><th>NV có nhập</th></tr></thead>
+            <tbody id="dtDay"></tbody>
+          </table></div>
+        </div>
+      </div>
+      <div class="note" style="margin:12px 0 6px"><b>Dòng bán vé lệch bước giá</b> <span id="dtOddSum"></span></div>
+      <div class="tw" style="max-height:260px"><table>
+        <thead><tr><th>Ngày</th><th>Nhân viên</th><th class="num">Số tiền</th><th class="num">Lẻ so với bước giá</th><th>Diễn giải</th></tr></thead>
+        <tbody id="dtOdd"></tbody>
+      </table></div>
+      <div class="note" style="margin-top:8px">Đây là <b>dấu hiệu</b>, không phải kết luận: NV làm nửa ca, chuyên nhận hàng, hoặc ngày mưa / sau lễ đều có thể bán ít. Dùng để chọn ai cần kiểm kê đột xuất / hỏi lại. Chính xác nhất khi xem kỳ ≥ 4 tuần (nút Tháng / Quý). Bấm 1 dòng để xem giao dịch.</div>
+    </div>
     <div class="card" style="margin-bottom:12px">
       <h3>Biến động sổ gốc &amp; kiểm kê <small id="bdSum"></small></h3>
       <div class="filters" id="bdFil" style="margin-bottom:8px">
@@ -1454,6 +1501,7 @@ function computeRisk(){
   xeDup.filter(o => o.hot).forEach(o => o.nvs.forEach(n => dupNV[n] = (dupNV[n] || 0) + 1));
   [...Object.keys(au), ...Object.keys(dupNV)].forEach(n => { if (!st[n]) st[n] = {nv:n, vp:NV_VP[n] || '', ve:0, thu:0, hoan:0, ck:0, chiphi:0, khac:0, hoanNoPh:0, ckNoPh:0, hard:0, days:{}}; });
 
+  const RVN = computeRevenue(rs);
   const listRev = Object.values(st).filter(o => o.ve > 0 || o.thu > 0);
   const list = Object.values(st).filter(o => o.ve > 0 || o.thu > 0 || au[o.nv] || dupNV[o.nv]);
   const M = [
@@ -1494,6 +1542,9 @@ function computeRisk(){
       if (a.kkThuaN) add(1, `${a.kkThuaN} lần kiểm kê thừa tiền (thu chưa ghi sổ?)`);
     }
     if (dupNV[o.nv]) add(Math.min(4, dupNV[o.nv] * 2), `${dupNV[o.nv]} lần chi xe trùng với NV khác`, 'red');
+    const pv = RVN.byNV[o.nv];
+    if (pv && pv.flag) add(pv.ratio < 0.4 ? 2 : 1, `Bán vé bằng ${pct(pv.ratio)} đồng nghiệp cùng VP cùng ngày (${pv.n} ngày)`);
+    if (pv && pv.odd >= 2) add(1, `${pv.odd} dòng bán vé lệch bước giá ${fmtM(RVN.unit)}`);
     if (span >= 14){
       const ds = Object.keys(o.days).map(Number);
       const cut = Math.min(D.toDay, D.today) - 6;
@@ -1520,8 +1571,84 @@ function computeRisk(){
     o[c] += r.tien; o.n++;
   });
   const plates = Object.values(pl).map(o => (o.t = o.xe + o.nl + o.sc + o.bx, o)).sort((a, b) => b.t - a.t);
-  return {list, listRev, base, enough, phones, plates, noPlateN, noPlateT, xeTotal, xeDup, AU, au, rv: reviewerStats()};
+  return {list, listRev, base, enough, phones, plates, noPlateN, noPlateT, xeTotal, xeDup, AU, au, rv: reviewerStats(), RVN};
 }
+
+/* ================== PHÂN TÍCH DOANH THU VÉ (chỉ dùng dữ liệu sẵn có) ==================
+   1. Bước giá: tự suy ra từ dữ liệu (đơn vị lớn nhất chia hết ≥ 95% dòng bán vé) → dòng lệch bước = nghi gõ sai / bớt tiền
+   2. So với đồng nghiệp: mỗi ngày, mỗi VP lấy trung vị bán vé của các NV khác có nhập THU hôm đó
+   3. Ngày thấp bất thường: doanh thu vé của VP thấp hơn 60% mức thường của cùng thứ trong tuần */
+const RV_UNITS = [500000, 200000, 100000, 50000, 40000, 30000, 20000, 10000, 5000];
+function computeRevenue(rs){
+  const last = Math.min(D.toDay, D.today - 1);             // bỏ hôm nay (chưa nhập xong)
+  const ve = rs.filter(r => isBanVe(r) && r.day != null && r.day <= last && r.tien > 0);
+  // 1. Bước giá
+  let unit = 0;
+  if (ve.length >= 30) unit = RV_UNITS.find(u => ve.filter(r => r.tien % u === 0).length / ve.length >= 0.95) || 0;
+  const odd = unit ? ve.filter(r => r.tien % unit !== 0).sort((a, b) => b.day - a.day) : [];
+  // 2. So với đồng nghiệp (ngày có ≥ 1 đồng nghiệp cùng VP cùng nhập THU)
+  const cell = {}, present = {};
+  rs.forEach(r => { if (r.loai !== 'THU' || r.day == null || r.day > last) return;
+    const k = (r.vp || '?') + '|' + r.day; (present[k] = present[k] || new Set()).add(r.nv); });
+  ve.forEach(r => { const k = (r.vp || '?') + '|' + r.day; const m = cell[k] = cell[k] || {}; m[r.nv] = (m[r.nv] || 0) + r.tien; });
+  const byNV = {};
+  Object.keys(present).forEach(k => {
+    const ppl = [...present[k]], m = cell[k] || {};
+    if (ppl.length < 2) return;
+    ppl.forEach(nv => {
+      const own = m[nv] || 0, peers = ppl.filter(x => x !== nv).map(x => m[x] || 0), pm = median(peers);
+      if (pm <= 0) return;
+      const o = byNV[nv] = byNV[nv] || {nv, vp:k.split('|')[0], n:0, own:0, peer:0, low:0, days:[]};
+      o.n++; o.own += own; o.peer += pm; if (own < pm * 0.5) o.low++;
+    });
+  });
+  // NV chỉ làm hàng (không bán vé lần nào) thì không so
+  const seller = new Set(ve.map(r => r.nv));
+  Object.values(byNV).forEach(o => { o.ratio = o.peer ? o.own / o.peer : 1; o.flag = seller.has(o.nv) && o.n >= 5 && o.ratio < 0.6; });
+  odd.forEach(r => { const o = byNV[r.nv] = byNV[r.nv] || {nv:r.nv, vp:r.vp, n:0, own:0, peer:0, low:0, ratio:1, flag:false}; o.odd = (o.odd || 0) + 1; });
+  const peer = Object.values(byNV).filter(o => o.n >= 5 && seller.has(o.nv)).sort((a, b) => a.ratio - b.ratio);
+  // 3. Ngày thấp bất thường theo VP
+  const vd = {};
+  ve.forEach(r => { const v = r.vp || '?', o = vd[v] = vd[v] || {}; o[r.day] = (o[r.day] || 0) + r.tien; });
+  const lowDays = [];
+  Object.keys(vd).forEach(v => {
+    const days = Object.keys(vd[v]).map(Number), wk = {};
+    days.forEach(d => { const w = dayToDate(d).getUTCDay(); (wk[w] = wk[w] || []).push(vd[v][d]); });
+    for (let d = D.fromDay; d <= last; d++){
+      const w = dayToDate(d).getUTCDay(), arr = wk[w] || [];
+      if (arr.length < 3) continue;
+      const med = median(arr), t = vd[v][d] || 0;
+      const nvs = [...(present[v + '|' + d] || [])];
+      if (t < med * 0.6 && nvs.length) lowDays.push({vp:v, day:d, t, med, r:t / med, nvs});
+    }
+  });
+  lowDays.sort((a, b) => a.r - b.r);
+  return {unit, odd, byNV, peer, lowDays, veN: ve.length};
+}
+function renderRevenue(RV){
+  $('dtBase').innerHTML = RV.veN < 30 ? 'Kỳ đang xem có ít hơn 30 dòng bán vé: chọn kỳ dài hơn để phân tích.'
+    : `${fmt(RV.veN)} dòng bán vé · bước giá suy ra từ dữ liệu: <b>${RV.unit ? fmt(RV.unit) + ' đ' : 'không xác định (giá vé quá đa dạng)'}</b> · ` +
+      `<b class="${RV.peer.filter(o => o.flag).length ? 'neg' : ''}">${RV.peer.filter(o => o.flag).length}</b> NV bán dưới 60% đồng nghiệp · ` +
+      `<b class="${RV.lowDays.length ? 'neg' : ''}">${RV.lowDays.length}</b> ngày-VP doanh thu thấp bất thường`;
+  $('dtPeer').innerHTML = RV.peer.slice(0, 40).map(o => `<tr class="click ${o.flag ? 'bad' : ''}" data-nv="${esc(o.nv)}">
+    <td>${esc(o.nv)}<div class="note">${esc(o.vp)}</div></td><td class="num">${o.n}</td>
+    <td class="num">${fmt(o.own / o.n)}</td><td class="num">${fmt(o.peer / o.n)}</td>
+    <td class="num ${o.flag ? 'neg' : ''}"><b>${pct(o.ratio)}</b></td><td class="num">${o.low || ''}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="empty">Chưa đủ ngày có ≥ 2 NV cùng VP để so sánh (cần ≥ 5 ngày/NV)</td></tr>';
+  $('dtDay').innerHTML = RV.lowDays.slice(0, 40).map(o => `<tr class="click" data-d="${o.day}" data-vp="${esc(o.vp)}">
+    <td>${esc(o.vp)}</td><td style="white-space:nowrap">${WD[dayToDate(o.day).getUTCDay()]} ${dayStr(o.day).slice(0, 5)}</td>
+    <td class="num">${fmt(o.t)}</td><td class="num">${fmt(o.med)}</td><td class="num neg"><b>${pct(o.r)}</b></td>
+    <td>${esc(o.nvs.join(', '))}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="empty">Không có ngày nào thấp bất thường (cần ≥ 3 tuần dữ liệu cho mỗi thứ)</td></tr>';
+  $('dtOddSum').textContent = RV.unit ? `(bước ${fmt(RV.unit)} đ · ${RV.odd.length} dòng)` : '';
+  $('dtOdd').innerHTML = RV.odd.slice(0, 60).map(r => `<tr class="click" data-th="${r.thRow}">
+    <td style="white-space:nowrap">${dayStr(r.day)}</td><td>${esc(r.nv)}<div class="note">dòng ${r.srcRow}</div></td>
+    <td class="num"><b>${fmt(r.tien)}</b></td><td class="num neg">${fmt(r.tien % RV.unit)}</td><td>${esc(r.dg)}</td></tr>`).join('')
+    || `<tr><td colspan="5" class="empty">${RV.unit ? 'Mọi dòng bán vé đều đúng bước giá' : 'Không xác định được bước giá chung'}</td></tr>`;
+}
+$('dtPeer').onclick = e => { const tr = e.target.closest('tr[data-nv]'); if (tr) openDetail(tr.dataset.nv); };
+$('dtDay').onclick = e => { const tr = e.target.closest('tr[data-d]'); if (tr) openReview({day: +tr.dataset.d, q: 'bán vé'}); };
+$('dtOdd').onclick = e => { const tr = e.target.closest('tr[data-th]'); const r = tr && byTh(+tr.dataset.th); if (r) openReview({nv: r.nv, q: 'dòng ' + r.srcRow}); };
 
 /* ---- Nhật ký kiểm soát (hệ thống tự ghi khi gom + kiểm kê) ---- */
 const AUD_ACT = /^(XÓA DÒNG|SỬA DÒNG|MẤT\/ĐỔI TAB|BIẾN ĐỘNG LỚN|SỬA DM|KIỂM KÊ QUỸ)$/;
@@ -1602,6 +1729,7 @@ function renderRisk(){
     {l:'Sửa DM / mất tab', v:`<span class="${dmN + tabN ? 'neg' : ''}" data-n="${dmN + tabN}">${dmN + tabN}</span>`, h: dmN + ' sửa DM · ' + tabN + ' tab mất/đổi tên'}
   ]);
   countUp($('auKpis'));
+  renderRevenue(R.RVN);
 
   /* ---- Biến động sổ gốc & kiểm kê ---- */
   const fa = $('bdAct').value;
@@ -1650,6 +1778,9 @@ function exportAudit(){
     if (o.self) rows.push(['Tách bạch nhiệm vụ', 'ĐỎ', o.who, '', 'Tự duyệt / xác nhận ' + o.self + ' dòng của chính mình', '']);
     if (o.duyet >= 50 && o.bulk / o.duyet > 0.8) rows.push(['Chất lượng duyệt', 'Theo dõi', o.who, '', Math.round(o.bulk / o.duyet * 100) + '% dòng duyệt hàng loạt', '']);
   });
+  R.RVN.peer.filter(o => o.flag).forEach(o => rows.push(['Doanh thu vé', o.ratio < 0.4 ? 'ĐỎ' : 'Theo dõi', o.nv, '', 'Bán vé bằng ' + pct(o.ratio) + ' đồng nghiệp cùng VP cùng ngày (' + o.n + ' ngày, ' + o.low + ' ngày < 50%)', Math.round(o.own / o.n)]));
+  R.RVN.lowDays.forEach(o => rows.push(['Doanh thu vé', 'Theo dõi', o.vp + ': ' + o.nvs.join(', '), dayStr(o.day), 'Doanh thu vé ngày thấp: ' + pct(o.r) + ' mức thường cùng thứ (' + fmt(o.med) + ')', o.t]));
+  R.RVN.odd.forEach(r => rows.push(['Doanh thu vé', 'Theo dõi', r.nv, dayStr(r.day), 'Bán vé lệch bước giá ' + fmt(R.RVN.unit) + ' (dòng ' + r.srcRow + ')', r.tien]));
   if (R.rv.oldN) rows.push(['Tồn đọng kiểm', 'Theo dõi', '', dayStr(R.rv.oldest), R.rv.oldN + ' dòng chưa kiểm quá 3 ngày', R.rv.oldT]);
   LEDGER.filter(o => o.cuoi < 0 || o.cuoi > D.nguong).forEach(o => rows.push(['Tồn quỹ', o.cuoi < 0 ? 'ĐỎ' : 'Theo dõi', o.nv, dayStr(Math.min(D.toDay, D.today)), o.cuoi < 0 ? 'Âm quỹ' : 'Giữ tiền vượt ngưỡng (' + o.dem + ' đêm)', o.cuoi]));
   if (!rows.length) return toast('Kỳ ' + ky + ' không có phát hiện nào để lập biên bản');
@@ -2022,6 +2153,7 @@ const MOCK_API = (() => {
 })();
 
 /* ================== KHỞI ĐỘNG ================== */
+window.__TC_OK = true;                            // trang đã chạy tới cuối mã
 if (MOCK){ $('mockBanner').classList.remove('hide'); $('mockHint').classList.remove('hide'); }
 (async () => {
   let saved = null; try{ saved = JSON.parse(store.get('tc_ses') || 'null'); }catch(e){}
