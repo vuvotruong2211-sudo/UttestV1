@@ -4,7 +4,7 @@
 <base target="_top">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Thu Chi PVSG – PVĐL</title>
+<title>TUAN TU EXPRESS - THU CHI NỘI BỘ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
@@ -375,7 +375,7 @@ tr.bad td:first-child{box-shadow:inset 3px 0 0 var(--red)}
     <div class="toprow">
       <div class="brand">
         <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="3"/><path d="M3 11h18M7 17v2.5M17 17v2.5"/><circle cx="7.5" cy="14" r=".6" fill="currentColor"/><circle cx="16.5" cy="14" r=".6" fill="currentColor"/></svg></div>
-        <div style="min-width:0"><h1>Thu Chi PVSG – PVĐL</h1><div class="sub" id="syncInfo">Đang tải…</div></div>
+        <div style="min-width:0"><h1>TUAN TU EXPRESS - THU CHI NỘI BỘ</h1><div class="sub" id="syncInfo">Đang tải…</div></div>
       </div>
       <div class="userchip"><b id="meName"></b><span class="role" id="meRole"></span><button class="ghost hide" id="btnPQ" title="Bật / tắt tính năng cho từng vai trò">⚙ Phân quyền</button><button class="ghost" id="btnOut">Thoát</button></div>
     </div>
@@ -882,6 +882,7 @@ $('loginForm').onsubmit = async e => {
 };
 $('btnOut').onclick = () => logout(false);
 
+/*@TC-MOC-1/6 — mốc kiểm tra dán đủ file, không xoá*/
 /* ================== KỲ BÁO CÁO ================== */
 function setPreset(p){
   const td = localToday(), t = dayToDate(td), y = t.getUTCFullYear(), m = t.getUTCMonth();
@@ -1250,6 +1251,7 @@ function drawTrend(labels, T, C, N){
 }
 
 /* ---- Bản đồ ngày ---- */
+/*@TC-MOC-2/6 — mốc kiểm tra dán đủ file, không xoá*/
 function renderClose(){
   const last = Math.min(D.toDay, D.today), first = Math.max(D.fromDay, last - 30);
   const days = []; for (let d = first; d <= last; d++) days.push(d);
@@ -1647,6 +1649,7 @@ function computeRisk(){
   return {list, listRev, base, enough, phones, plates, noPlateN, noPlateT, xeTotal, xeDup, AU, au, rv: reviewerStats(), RVN};
 }
 
+/*@TC-MOC-3/6 — mốc kiểm tra dán đủ file, không xoá*/
 /* ================== PHÂN TÍCH DOANH THU VÉ (chỉ dùng dữ liệu sẵn có) ==================
    1. Bước giá: tự suy ra từ dữ liệu (đơn vị lớn nhất chia hết ≥ 95% dòng bán vé) → dòng lệch bước = nghi gõ sai / bớt tiền
    2. So với đồng nghiệp: mỗi ngày, mỗi VP lấy trung vị bán vé của các NV khác có nhập THU hôm đó
@@ -2009,6 +2012,7 @@ function dsBuild(){
   $('dsGo').disabled = !lines.length || DS.map.nd < 0;
   if (DS.map.nd < 0) $('dsInfo').innerHTML += '<br><span class="neg">Cần chọn cột Nội dung CK.</span>';
 }
+/*@TC-MOC-4/6 — mốc kiểm tra dán đủ file, không xoá*/
 function dsMatch(){
   const L = DS.lines, ld = L.map(l => l.day);
   const a = Math.max(Math.min(...ld), D.fromDay), b = Math.min(Math.max(...ld), D.toDay, D.today);
@@ -2542,6 +2546,8 @@ if (MOCK){ $('mockBanner').classList.remove('hide'); $('mockHint').classList.rem
   }
   showLogin();
 })();
+window.__TC_BUILD = '2026-11-12b'; /*@TC-MOC-5/6*/
 </script>
+<!--@TC-MOC-6/6-->
 </body>
 </html>
