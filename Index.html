@@ -257,6 +257,19 @@ tr.bad td:first-child{box-shadow:inset 3px 0 0 var(--red)}
 #toast.err .ic{background:var(--red)}
 .modal{position:fixed;inset:0;background:rgba(15,20,28,.45);display:none;align-items:center;justify-content:center;z-index:55;padding:16px}
 .modal.open{display:flex;animation:fade .2s}
+#mDS .box{max-width:1080px;max-height:94vh;overflow:auto}
+#mPQ .box{max-width:760px;max-height:94vh;overflow:auto}
+#mPQ table.pq td,#mPQ table.pq th{text-align:center;vertical-align:middle}
+#mPQ table.pq td:first-child,#mPQ table.pq th:first-child{text-align:left}
+#mPQ input[type=checkbox]{width:20px;height:20px;cursor:pointer;accent-color:var(--brand)}
+#mPQ input[type=number]{width:70px;text-align:center}
+#mPQ td.chg{background:var(--amber-bg)}
+#mPQ .def{font-size:11px;color:var(--muted)}
+#mDS .ds-priv{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:6px 0 10px}
+#mDS .ds-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-top:8px}
+#mDS .ds-map label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+#mDS #dsTabs button.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+#mDS .how{font-size:11px;white-space:nowrap}
 .modal .box{background:var(--panel);border-radius:var(--r-l);padding:20px;width:100%;max-width:460px;border:1px solid var(--line);animation:pop2 .28s var(--ease)}
 @keyframes fade{from{opacity:0}}
 @keyframes pop2{from{opacity:0;transform:translateY(10px) scale(.97)}}
@@ -364,7 +377,7 @@ tr.bad td:first-child{box-shadow:inset 3px 0 0 var(--red)}
         <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="3"/><path d="M3 11h18M7 17v2.5M17 17v2.5"/><circle cx="7.5" cy="14" r=".6" fill="currentColor"/><circle cx="16.5" cy="14" r=".6" fill="currentColor"/></svg></div>
         <div style="min-width:0"><h1>Thu Chi PVSG – PVĐL</h1><div class="sub" id="syncInfo">Đang tải…</div></div>
       </div>
-      <div class="userchip"><b id="meName"></b><span class="role" id="meRole"></span><button class="ghost" id="btnOut">Thoát</button></div>
+      <div class="userchip"><b id="meName"></b><span class="role" id="meRole"></span><button class="ghost hide" id="btnPQ" title="Bật / tắt tính năng cho từng vai trò">⚙ Phân quyền</button><button class="ghost" id="btnOut">Thoát</button></div>
     </div>
     <div class="controls controls-row">
         <div class="seg" id="presets">
@@ -503,6 +516,7 @@ tr.bad td:first-child{box-shadow:inset 3px 0 0 var(--red)}
       <button id="btnFindAll" title="Tìm trong toàn bộ dữ liệu, không giới hạn kỳ đang xem">🔎 Tìm toàn bộ</button>
       <button id="btnCsv">Tải CSV</button>
       <button id="btnBulk" class="hide">Duyệt OK hàng loạt</button>
+      <button id="btnDS" class="hide" title="Khớp các dòng CHI - KH chuyển khoản với sao kê ngân hàng. Sao kê chỉ xử lý trên máy này, không lưu.">🏦 Đối soát sao kê</button>
     </div>
     <div class="wchips" id="wChips"></div>
     <div class="sub" id="reviewSum" style="margin-bottom:8px"></div>
@@ -549,7 +563,7 @@ tr.bad td:first-child{box-shadow:inset 3px 0 0 var(--red)}
     <div class="card" style="margin-bottom:12px">
       <h3>Biến động sổ gốc &amp; kiểm kê <small id="bdSum"></small></h3>
       <div class="filters" id="bdFil" style="margin-bottom:8px">
-        <select id="bdAct"><option value="">Mọi loại</option><option value="hot">Chỉ mục đỏ (THU giảm, thiếu tiền, sửa DM, mất tab)</option><option>XÓA DÒNG</option><option>SỬA DÒNG</option><option>MẤT/ĐỔI TAB</option><option>SỬA DM</option><option>KIỂM KÊ QUỸ</option></select>
+        <select id="bdAct"><option value="">Mọi loại</option><option value="hot">Chỉ mục đỏ (THU giảm, thiếu tiền, sửa DM, mất tab)</option><option>XÓA DÒNG</option><option>SỬA DÒNG</option><option>MẤT/ĐỔI TAB</option><option>SỬA DM</option><option>KIỂM KÊ QUỸ</option><option>ĐỐI SOÁT SAO KÊ</option><option>SỬA PHÂN QUYỀN</option></select>
       </div>
       <div class="tw" style="max-height:420px"><table>
         <thead><tr><th>Thời điểm</th><th>Loại</th><th>Nhân viên</th><th>Ngày GD</th><th>Nội dung</th><th>Cũ → Mới</th><th class="num">Chênh</th><th>Ghi chú</th></tr></thead>
@@ -643,6 +657,48 @@ tr.bad td:first-child{box-shadow:inset 3px 0 0 var(--red)}
   <div class="calgrid" id="calGrid"></div>
   <div class="note" id="calNote" style="margin-top:8px"></div>
   <div class="btns" style="flex-wrap:wrap"><button id="calToday">Hôm nay</button><button id="calMonth">Cả tháng này</button><button class="ghost" data-close>Đóng</button></div>
+</div></div>
+
+<div class="modal" id="mPQ"><div class="box">
+  <h4>⚙ Phân quyền theo tính năng</h4>
+  <div class="sub">Tick để mở / tắt tính năng cho từng vai trò. Server áp dụng <b>ngay</b> cho mọi thao tác. Giao diện của người đó đổi theo khi họ tải lại trang. Chốt sổ và Phân quyền luôn chỉ dành cho VVIP. Mỗi thay đổi được ghi vào Nhật ký và bản tin 22h.</div>
+  <div class="tw" style="margin-top:10px"><table class="pq">
+    <thead id="pqHead"></thead><tbody id="pqBody"></tbody>
+  </table></div>
+  <div class="note" id="pqNote" style="margin-top:8px"></div>
+  <div class="btns" style="flex-wrap:wrap"><button class="ghost" id="pqDef">↺ Về mặc định</button><span style="flex:1"></span><button class="ghost" data-close>Huỷ</button><button class="primary" id="pqSave" disabled>Lưu phân quyền</button></div>
+</div></div>
+
+<div class="modal" id="mDS"><div class="box">
+  <h4>🏦 Đối soát chuyển khoản với sao kê ngân hàng</h4>
+  <div class="note ds-priv">🔒 Sao kê chỉ được đọc và so khớp <b>ngay trên máy này</b>: không tải lên Google Sheet, không gửi về server, không lưu lại. Đóng cửa sổ là xoá khỏi bộ nhớ. Nhật ký chỉ ghi số lượng khớp/lệch, không ghi nội dung sao kê. Chỉ cần cột <b>Ngày</b>, <b>Số tiền ghi có</b>, <b>Nội dung CK</b>; không cần cột số dư.</div>
+  <div id="dsStep1">
+    <div class="row">Chọn file layout chuẩn (.xlsx, .xls, .csv)<input type="file" id="dsFile" accept=".xlsx,.xls,.csv,.txt"></div>
+    <div class="row">Hoặc copy vùng dữ liệu trong Excel / Google Sheet (kèm dòng tiêu đề) rồi dán vào đây
+      <textarea id="dsPaste" rows="4" placeholder="Ngày&#9;Ngân hàng&#9;Số tiền ghi có&#9;Nội dung&#10;05/11/2026&#9;VCB&#9;1.500.000&#9;0934022xxx chuyen tien ve xe"></textarea></div>
+  </div>
+  <div id="dsStep2" class="hide">
+    <div class="sub" id="dsInfo"></div>
+    <div class="ds-map" id="dsMap"></div>
+  </div>
+  <div id="dsStep3" class="hide">
+    <div class="kpis" id="dsKpis" style="margin:10px 0"></div>
+    <div class="filters" id="dsTabs">
+      <button data-ds="khop" class="on">✓ Khớp</button><button data-ds="thieu">✗ Sổ có – sao kê KHÔNG có</button><button data-ds="thua">Sao kê có – sổ không có</button>
+      <span style="flex:1"></span><button id="dsCsv">Tải CSV dòng lệch</button>
+    </div>
+    <div class="tw" style="max-height:46vh"><table><thead id="dsHead"></thead><tbody id="dsBody"></tbody></table></div>
+    <div class="note" id="dsNote" style="margin-top:8px"></div>
+  </div>
+  <div class="btns" style="flex-wrap:wrap">
+    <button class="ghost hide" id="dsReset">↺ Chọn sao kê khác</button>
+    <span style="flex:1"></span>
+    <label id="dsMedL" class="hide" style="align-self:center"><input type="checkbox" id="dsMed"> Duyệt cả dòng khớp theo số tiền + ngày</label>
+    <button id="dsSai" class="hide"></button>
+    <button class="primary hide" id="dsOk"></button>
+    <button class="primary hide" id="dsGo">Đối soát</button>
+    <button class="ghost" data-close>Đóng</button>
+  </div>
 </div></div>
 
 <div class="modal" id="mKK"><div class="box">
@@ -784,6 +840,7 @@ const pending  = r => r.kt === '' || r.kt === 'Đã sửa';
 let D = null, ROWS = [], STATUS_MAP = {}, NV_VP = {}, shown = 200, editing = null, chart = null, revDay = null;
 let LEDGER = [], LEDGER_ALL = {}, BY_NV = {}, TH_MAP = new Map(), RECV = [], WTYPE = '', FIND = null, DETAIL_CSV = [];
 const P = () => (SES && SES.perm) || {};
+const seeMoney = () => !!(P().tong || P().tongquan);
 
 /* ================== ĐĂNG NHẬP ================== */
 function showLogin(msg){ const l = $('login'); l.classList.remove('leave'); l.style.display = 'flex'; $('loginErr').textContent = msg || ''; setTimeout(() => $('lgUser').focus(), 80); }
@@ -796,15 +853,17 @@ function applySession(s){
   $('tabLog').classList.toggle('hide', !s.perm.log);
   $('tabRisk').classList.toggle('hide', !s.perm.ruiro);
   $('btnBulk').classList.toggle('hide', !s.perm.duyet);
-  $('dKK').classList.toggle('hide', !(s.perm.tong || s.perm.quy));
+  $('dKK').classList.toggle('hide', !s.perm.kiemke);
+  $('btnDS').classList.toggle('hide', !s.perm.doisoat);
+  $('btnPQ').classList.toggle('hide', !s.perm.tong);
   document.querySelectorAll('.colAct').forEach(x => x.classList.toggle('hide', !s.perm.duyet));
   const lim = s.perm.days > 0, tong = !!s.perm.tong;
   document.querySelectorAll('#presets .full').forEach(b => b.classList.toggle('hide', lim));
   const p7 = document.querySelector('#presets [data-p="7d"]'); p7.textContent = lim ? 'D-' + (s.perm.days - 1) + ' → nay' : '7 ngày';
   $('vipBanner').classList.add('hide');
-  const tabOk = { overview: tong, close: true, ledger: true, detail: true, quy: tong || s.perm.quy, review: tong || s.perm.duyet, risk: !!s.perm.ruiro, log: !!s.perm.log };
+  const tabOk = { overview: tong || !!s.perm.tongquan, close: true, ledger: true, detail: true, quy: tong || s.perm.quy, review: tong || s.perm.duyet || s.perm.doisoat, risk: !!s.perm.ruiro, log: !!s.perm.log };
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('hide', !tabOk[b.dataset.t]));
-  ['quyKpis', 'quyRecvBox'].forEach(id => $(id).classList.toggle('hide', !tong));
+  ['quyKpis', 'quyRecvBox'].forEach(id => $(id).classList.toggle('hide', !(tong || s.perm.tongquan)));
   // Vai trò không duyệt vẫn được tìm giao dịch (trong phạm vi ngày được xem)
   setPreset(lim ? '7d' : 'month'); RAW = null;
   if (document.querySelector('.tab.on').classList.contains('hide')) document.querySelector(`.tab[data-t="${tong ? 'overview' : 'ledger'}"]`).click();
@@ -863,6 +922,18 @@ function skeleton(){
    RAW = dữ liệu server trả về cho trọn tháng (hoặc vùng rộng hơn).
    Đổi ngày / bấm lịch trong vùng đã tải → tính lại ngay trên máy, KHÔNG gọi server. */
 let RAW = null, LOADING = null;
+/* Server nén gzip → base64. Trình duyệt cũ không có DecompressionStream → xin bản không nén */
+const Z_OK = typeof DecompressionStream === 'function';
+async function unz(r){
+  if (!r || typeof r.z !== 'string') return r;
+  const bin = atob(r.z), u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const txt = await new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  const o = JSON.parse(txt);
+  o.kb = [Math.round(txt.length / 1024), Math.round(u8.length / 1024)];
+  return o;
+}
+const kbStr = k => k >= 1024 ? (k / 1024).toFixed(1).replace('.', ',') + ' MB' : k + ' KB';
 function clampRange(a, b){
   if (b < a){ const t = a; a = b; b = t; }
   if (P().days > 0){ const td = localToday(), min = td - P().days + 1; a = Math.max(a, min); b = Math.min(b, td); if (b < a) b = a; }
@@ -894,7 +965,9 @@ function show(a, b, anim){
   const local = performance.now() - t0, s = RAW.srv || {};
   $('syncInfo').innerHTML = esc(D.lastSync ? D.lastSync.split(' · ')[0] : 'Chưa có thông tin lần gom') +
     ` · Kỳ ${dayStr(a)} – ${dayStr(b)} · ` + (anim
-      ? `tải ${((RAW.loadMs || 0)/1000).toFixed(1)}s (server ${((s.ms||0)/1000).toFixed(1)}s${s.tail ? ', chỉ đọc phần chưa chốt' : ''})`
+      ? `tải ${((RAW.loadMs || 0)/1000).toFixed(1)}s (server ${((s.ms||0)/1000).toFixed(1)}s${s.tail ? ', chỉ đọc phần chưa chốt' : ''}` +
+        (s.logN != null ? `, ${fmt(s.logN)} dòng nhật ký${s.logCut > 2 ? ' từ ngày chốt' : ''}` : '') +
+        (RAW.kb ? `, nén ${kbStr(RAW.kb[0])} → ${kbStr(RAW.kb[1])}` : '') + ')'
       : `<span class="fast">⚡ lọc tại máy ${Math.max(1, Math.round(local))}ms</span>`);
 }
 /** Áp dụng kỳ đang chọn. force = tải lại từ server */
@@ -914,7 +987,7 @@ async function apply(force){
   LOADING = key; busy(true);
   const t0 = performance.now();
   try{
-    const r = await apiT('getDashboardData', dayISO(fa), dayISO(fb));
+    const r = await unz(await apiT('getDashboardData', dayISO(fa), dayISO(fb), Z_OK ? 1 : 0));
     if (LOADING !== key) return;                       // người dùng đã chọn kỳ khác trong lúc chờ
     r.loadMs = performance.now() - t0; RAW = r;
     [a, b] = [Math.max(a, RAW.fromDay), Math.min(b, RAW.toDay)];
@@ -967,7 +1040,7 @@ function renderCal(){
     if (CAL.pick != null ? d === CAL.pick : (d >= a && d <= b)) cls.push(CAL.pick != null ? 'pick' : 'in');
     if (d < min || d > max) cls.push('off'); else if (d > td) cls.push('future');
     const sub = !s ? (loaded && d <= td ? '<span class="s">—</span>' : '<span class="s">&nbsp;</span>')
-      : `<span class="s">${P().tong ? fmtM(s.thu).replace(/\s/g,'') : s.n + ' dòng'}</span>`;
+      : `<span class="s">${seeMoney() ? fmtM(s.thu).replace(/\s/g,'') : s.n + ' dòng'}</span>`;
     const dot = s && s.bad ? '<i class="dot red"></i>' : s && s.pend ? '<i class="dot amber"></i>' : '';
     h += `<button class="${cls.join(' ')}" data-d="${d}" title="${dayStr(d)}${s ? ` · ${s.n} dòng · ${s.pend} chờ kiểm · ${s.bad} sai/cờ` : ''}">${dot}<span class="n">${dayToDate(d).getUTCDate()}</span>${sub}</button>`;
   }
@@ -1104,7 +1177,7 @@ function computeLedger(){
 }
 
 /* ================== RENDER ================== */
-function renderAll(){ computeLedger(); if (P().tong){ renderOverview(); renderChot(); } renderClose(); renderLedger(); renderDetail(); renderQuy(); renderReview(); if (P().log) renderLog(); if (P().ruiro) renderRisk(); }
+function renderAll(){ computeLedger(); if (seeMoney()) renderOverview(); if (P().tong) renderChot(); renderClose(); renderLedger(); renderDetail(); renderQuy(); renderReview(); if (P().log) renderLog(); if (P().ruiro) renderRisk(); }
 
 function renderOverview(){
   const rs = vpRows().filter(r => r.day != null && typeof r.tien === 'number');
@@ -1208,7 +1281,7 @@ function renderLedger(){
       <td class="num ${o.dem?'neg':''}">${o.dem||''}</td><td class="num">${o.nopCho||''}</td>
       <td class="num">${o.pend||''}</td><td class="num ${o.sai?'neg':''}">${o.sai||''}</td><td class="num ${o.warn?'neg':''}">${o.warn||''}</td></tr>`;
   }).join('') || '<tr><td colspan="12" class="empty">Không có nhân viên</td></tr>';
-  $('ledgerFoot').innerHTML = !P().tong ? '' : `<tr><td colspan="2">Tổng</td><td class="num">${fmt(s.dau)}</td><td class="num">${fmt(s.thu)}</td><td class="num">${fmt(s.chi)}</td><td class="num">${fmt(s.nop)}</td><td class="num">${fmt(s.cuoi)}</td><td class="num">${s.dem}</td><td class="num">${s.nopCho}</td><td class="num">${s.pend}</td><td class="num">${s.sai}</td><td class="num">${s.warn}</td></tr>`;
+  $('ledgerFoot').innerHTML = !seeMoney() ? '' : `<tr><td colspan="2">Tổng</td><td class="num">${fmt(s.dau)}</td><td class="num">${fmt(s.thu)}</td><td class="num">${fmt(s.chi)}</td><td class="num">${fmt(s.nop)}</td><td class="num">${fmt(s.cuoi)}</td><td class="num">${s.dem}</td><td class="num">${s.nopCho}</td><td class="num">${s.pend}</td><td class="num">${s.sai}</td><td class="num">${s.warn}</td></tr>`;
 }
 
 /* ---- Chi tiết NV: từng giao dịch + tồn lũy kế ---- */
@@ -1300,7 +1373,7 @@ function renderQuy(){
   $('quyRecv').innerHTML = Object.entries(rv).sort((a,b)=>b[1].t-a[1].t).map(([k,o]) => `<tr><td>${esc(k)}</td><td class="num">${fmt(o.t)}</td><td class="num pos">${fmt(o.ok)}</td><td class="num">${fmt(o.cho)}</td><td class="num ${o.sai?'neg':''}">${fmt(o.sai)}</td></tr>`).join('') || '<tr><td colspan="5" class="empty">Không có dòng nộp quỹ trong kỳ</td></tr>';
 
   const list = quyRows();
-  $('quySum').textContent = P().tong ? `${list.length} dòng · ${fmt(list.reduce((s,r)=>s+(+r.tien||0),0))} đ` : `${list.length} dòng`;
+  $('quySum').textContent = seeMoney() ? `${list.length} dòng · ${fmt(list.reduce((s,r)=>s+(+r.tien||0),0))} đ` : `${list.length} dòng`;
   const can = P().quy;
   $('quyBody').innerHTML = list.map(r => `<tr data-th="${r.thRow}">
     <td class="c-main" style="white-space:nowrap">${dayStr(r.day)}</td>
@@ -1347,7 +1420,7 @@ function renderReview(){
   renderWarnChips();
   const list = reviewRows();
   const thu = list.filter(r=>r.loai==='THU').reduce((s,r)=>s+(+r.tien||0),0), chi = list.filter(r=>r.loai==='CHI').reduce((s,r)=>s+(+r.tien||0),0);
-  $('reviewSum').textContent = P().tong ? `${list.length} dòng · Thu ${fmt(thu)} · Chi ${fmt(chi)}` : `${list.length} dòng`;
+  $('reviewSum').textContent = seeMoney() ? `${list.length} dòng · Thu ${fmt(thu)} · Chi ${fmt(chi)}` : `${list.length} dòng`;
   $('dayChip').classList.toggle('hide', revDay == null); $('dayChipTxt').textContent = 'Ngày ' + dayStr(revDay);
   const nPend = vpRows().filter(r => (pending(r) && r.warns.length) || r.hard).length;
   setCnt($('cntReview'), nPend, nPend > 0);
@@ -1374,7 +1447,7 @@ function renderLog(){
   const who = $('lgWho').value, act = $('lgAct').value;
   const list = D.log.filter(l => (!who || l[1] === who) && (!act || l[3] === act));
   $('logSum').textContent = list.length + ' thao tác trong kỳ';
-  const actCls = a => /SAI|XÓA|SỬA|MẤT|BIẾN ĐỘNG/.test(a) ? 'b-red' : a === 'DUYỆT' ? 'b-green' : /XÁC NHẬN QUỸ|KIỂM KÊ/.test(a) ? 'b-blue' : 'b-grey';
+  const actCls = a => /SAI|XÓA|SỬA|MẤT|BIẾN ĐỘNG/.test(a) ? 'b-red' : a === 'DUYỆT' ? 'b-green' : /XÁC NHẬN QUỸ|KIỂM KÊ|ĐỐI SOÁT|PHÂN QUYỀN/.test(a) ? 'b-blue' : 'b-grey';
   $('logBody').innerHTML = list.slice(0, 500).map(l => `<tr>
     <td style="white-space:nowrap">${esc(l[0])}</td><td>${esc(l[1])}<div class="note">${esc(l[2])}</div></td>
     <td><span class="badge ${actCls(l[3])}">${esc(l[3])}</span></td><td>${esc(l[4])}</td><td>${dayStr(l[5])}</td>
@@ -1651,7 +1724,7 @@ $('dtDay').onclick = e => { const tr = e.target.closest('tr[data-d]'); if (tr) o
 $('dtOdd').onclick = e => { const tr = e.target.closest('tr[data-th]'); const r = tr && byTh(+tr.dataset.th); if (r) openReview({nv: r.nv, q: 'dòng ' + r.srcRow}); };
 
 /* ---- Nhật ký kiểm soát (hệ thống tự ghi khi gom + kiểm kê) ---- */
-const AUD_ACT = /^(XÓA DÒNG|SỬA DÒNG|MẤT\/ĐỔI TAB|BIẾN ĐỘNG LỚN|SỬA DM|KIỂM KÊ QUỸ)$/;
+const AUD_ACT = /^(XÓA DÒNG|SỬA DÒNG|MẤT\/ĐỔI TAB|BIẾN ĐỘNG LỚN|SỬA DM|KIỂM KÊ QUỸ|ĐỐI SOÁT SAO KÊ|SỬA PHÂN QUYỀN)$/;
 const auditLog = () => (D.log || []).filter(l => AUD_ACT.test(l[3]));
 const logLoai = l => ((String(l[10] || '').match(/^(THU|CHI)\b/) || String(l[6] || '').match(/^(THU|CHI)\b/i) || [])[1] || '').toUpperCase();
 /** Mục đỏ: THU giảm, CHI sửa tăng, dòng đã duyệt bị xoá, kiểm kê thiếu, mất tab, sửa DM */
@@ -1659,6 +1732,8 @@ function auditHot(l){
   const t = +l[7] || 0, lo = logLoai(l);
   if (l[3] === 'XÓA DÒNG' || l[3] === 'SỬA DÒNG') return (lo === 'THU' && t < 0) || (lo === 'CHI' && l[3] === 'SỬA DÒNG' && t > 0) || /ĐÃ DUYỆT OK/.test(l[10]);
   if (l[3] === 'KIỂM KÊ QUỸ') return t < -D.kkLech;
+  if (l[3] === 'ĐỐI SOÁT SAO KÊ') return t < 0;
+  if (l[3] === 'SỬA PHÂN QUYỀN') return false;
   return true;
 }
 /** Giám sát người duyệt: khối lượng, duyệt hàng loạt, độ trễ, tự duyệt dòng của mình + tồn đọng chưa kiểm */
@@ -1738,7 +1813,7 @@ function renderRisk(){
   $('bdBody').innerHTML = bd.slice(0, 400).map(l => { const hot = auditHot(l), t = +l[7] || 0;
     return `<tr class="click ${hot ? 'bad' : ''}" data-nv="${esc(l[4] || '')}">
     <td style="white-space:nowrap">${esc(l[0])}<div class="note">${esc(l[1])}</div></td>
-    <td><span class="badge ${hot ? 'b-red' : l[3] === 'KIỂM KÊ QUỸ' ? 'b-blue' : 'b-grey'}">${esc(l[3])}</span></td>
+    <td><span class="badge ${hot ? 'b-red' : /KIỂM KÊ|ĐỐI SOÁT/.test(l[3]) ? 'b-blue' : 'b-grey'}">${esc(l[3])}</span></td>
     <td>${esc(l[4] || '')}</td><td style="white-space:nowrap">${dayStr(l[5])}</td><td>${esc(l[6] ? tenND(l[6]) : '')}</td>
     <td>${esc(l[8] || '')} → <b>${esc(l[9] || '')}</b></td>
     <td class="num ${hot && t ? 'neg' : ''}">${l[7] === '' || l[7] == null ? '' : (t > 0 ? '+' : '') + fmt(t)}</td>
@@ -1788,6 +1863,295 @@ function exportAudit(){
   downloadCSV('bien-ban-kiem-soat_' + $('from').value + '_' + $('to').value + '.csv',
     ['Nhóm', 'Mức', 'Đối tượng', 'Ngày', 'Phát hiện (kỳ ' + ky + ')', 'Số tiền'], rows);
 }
+
+/* ================== ĐỐI SOÁT SAO KÊ (chỉ chạy trên trình duyệt, không lưu) ==================
+   Khớp từng dòng "CHI - KH chuyển khoản" với 1 dòng tiền vào của sao kê (mỗi dòng sao kê chỉ dùng 1 lần):
+     1. cùng số tiền + SĐT trong diễn giải xuất hiện trong nội dung CK (lệch ngày ≤ 3)  → KHỚP CHẮC
+     2. cùng số tiền + cùng ngày → lệch 1 ngày → lệch 2 ngày                            → khớp theo số tiền + ngày */
+let DS = null;
+const DS_F = [
+  {k:'ngay', lb:'Ngày giao dịch *', keys:['ngay giao dich','ngay gd','ngay hach toan','ngay hieu luc','thoi gian giao dich','ngay','date','thoi gian','time']},
+  {k:'tien', lb:'Số tiền ghi có (tiền vào) *', keys:['so tien ghi co','ghi co','phat sinh co','tien vao','so tien vao','credit','so tien','amount','co']},
+  {k:'nd',   lb:'Nội dung CK *', keys:['noi dung giao dich','noi dung','dien giai','mo ta','chi tiet','description','remark','content']},
+  {k:'nh',   lb:'Ngân hàng / tài khoản', keys:['ngan hang','bank','tai khoan nhan','so tai khoan','tai khoan','stk','so tk']},
+  {k:'ma',   lb:'Mã giao dịch', keys:['ma giao dich','ma gd','so tham chieu','ma tham chieu','so but toan','reference','ref']}
+];
+const dsFold = s => vnFold(s).replace(/\s+/g, ' ').trim();
+const DS_BAD = /so du|balance|ghi no|phat sinh no|tien ra|debit/;
+function dsFind(head, f, taken){
+  const h = head.map(dsFold);
+  for (const key of f.keys){
+    let i = h.findIndex((x, j) => !taken.has(j) && x === key);
+    if (i < 0 && key.length >= 4) i = h.findIndex((x, j) => !taken.has(j) && x.includes(key) && !(f.k === 'tien' && DS_BAD.test(x)));
+    if (i >= 0) return i;
+  }
+  return -1;
+}
+function dsAuto(head){
+  const taken = new Set(), m = {};
+  DS_F.forEach(f => { const i = dsFind(head, f, taken); m[f.k] = i; if (i >= 0) taken.add(i); });
+  return m;
+}
+function dsDay(v){
+  if (typeof v === 'number' && v > 30000 && v < 80000) return Math.floor(v) - 25569;
+  const s = String(v ?? '').trim(); let m;
+  if ((m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/))){ const y = +m[3] < 100 ? 2000 + +m[3] : +m[3]; return Date.UTC(y, m[2] - 1, +m[1]) / 864e5; }
+  if ((m = s.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/))) return Date.UTC(+m[1], m[2] - 1, +m[3]) / 864e5;
+  return null;
+}
+function dsAmt(v){
+  if (typeof v === 'number') return v;
+  let t = String(v ?? '').trim(); if (!t) return NaN;
+  const neg = /^[-(]/.test(t);
+  t = t.replace(/[.,]\d{1,2}(?=\D*$)/, '');
+  const d = t.replace(/\D/g, ''); if (!d) return NaN;
+  return (neg ? -1 : 1) * Number(d);
+}
+/** CSV / dán từ Excel → mảng 2 chiều */
+function dsParseText(txt){
+  const head = txt.split(/\r?\n/).filter(l => l.trim()).slice(0, 20).join('\n');   // dòng đầu có thể là tiêu đề "SAO KÊ…"
+  const cnt = c => head.split(c).length - 1;
+  const sep = cnt('\t') ? '\t' : (cnt(';') > cnt(',') ? ';' : ',');
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < txt.length; i++){
+    const c = txt[i];
+    if (q){ if (c === '"'){ if (txt[i + 1] === '"'){ cell += '"'; i++; } else q = false; } else cell += c; continue; }
+    if (c === '"' && cell === '') q = true;
+    else if (c === sep){ row.push(cell); cell = ''; }
+    else if (c === '\n'){ row.push(cell.replace(/\r$/, '')); rows.push(row); row = []; cell = ''; }
+    else cell += c;
+  }
+  if (cell !== '' || row.length){ row.push(cell); rows.push(row); }
+  return rows;
+}
+function dsHeaderRow(rows){
+  let best = -1, sc = 0;
+  for (let i = 0; i < Math.min(rows.length, 20); i++){
+    const m = dsAuto(rows[i] || []), n = Object.values(m).filter(x => x >= 0).length;
+    if (m.ngay >= 0 && m.tien >= 0 && n > sc){ best = i; sc = n; }
+  }
+  return best;
+}
+let XLSX_P = null;
+function loadXLSX(){
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  return XLSX_P = XLSX_P || new Promise((res, rej) => { const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = () => res(window.XLSX); s.onerror = () => { XLSX_P = null; rej(new Error('Không tải được bộ đọc Excel. Lưu file thành .csv hoặc copy-dán dữ liệu.')); };
+    document.head.appendChild(s); });
+}
+/** Đọc file / đoạn dán → các bảng [{ten, rows}] (mỗi sheet Excel 1 bảng) */
+async function dsTables(file, text){
+  if (text) return [{ten:'', rows: dsParseText(text)}];
+  if (/\.(xlsx|xls)$/i.test(file.name)){
+    const X = await loadXLSX(), wb = X.read(await file.arrayBuffer(), {type:'array'});
+    return wb.SheetNames.map(n => ({ten:n, rows: X.utils.sheet_to_json(wb.Sheets[n], {header:1, raw:true, defval:''})}));
+  }
+  const buf = await file.arrayBuffer();
+  let t = new TextDecoder('utf-8').decode(buf);
+  if ((t.match(/�/g) || []).length > 3){ try{ t = new TextDecoder('windows-1258').decode(buf); }catch(e){} }
+  return [{ten:'', rows: dsParseText(t)}];
+}
+function dsOpen(){
+  DS = {tables:null, map:null, lines:null, res:null, tab:'khop', saiArm:false};
+  $('dsFile').value = ''; $('dsPaste').value = '';
+  ['dsStep2','dsStep3','dsReset','dsGo','dsOk','dsSai','dsMedL'].forEach(id => $(id).classList.add('hide'));
+  $('dsStep1').classList.remove('hide'); $('dsMed').checked = false;
+  openM('mDS');
+}
+function dsClear(){ DS = null; $('dsBody').innerHTML = ''; $('dsPaste').value = ''; $('dsFile').value = ''; }
+new MutationObserver(() => { if (!$('mDS').classList.contains('open')) dsClear(); }).observe($('mDS'), {attributes:true, attributeFilter:['class']});
+
+async function dsLoad(file, text){
+  busy(true);
+  try{
+    const T = (await dsTables(file, text)).map(t => ({...t, h: dsHeaderRow(t.rows)})).filter(t => t.h >= 0);
+    if (!T.length) throw new Error('Không thấy dòng tiêu đề có cột Ngày và Số tiền. Kiểm tra lại file / vùng đã copy (phải kèm dòng tiêu đề).');
+    DS.tables = T; DS.map = dsAuto(T[0].rows[T[0].h]);
+    dsShowMap();
+  }catch(e){ toast('Lỗi: ' + (e.message || e), 6000); }
+  finally{ busy(false); }
+}
+function dsShowMap(){
+  const T = DS.tables, head = T[0].rows[T[0].h];
+  $('dsMap').innerHTML = DS_F.map(f => `<label>${f.lb}<select data-f="${f.k}"><option value="-1">— không có —</option>${head.map((h, i) =>
+    `<option value="${i}" ${DS.map[f.k] === i ? 'selected' : ''}>${esc(String(h || '(cột ' + (i + 1) + ')'))}</option>`).join('')}</select></label>`).join('');
+  $('dsMap').querySelectorAll('select').forEach(s => s.onchange = () => { DS.map[s.dataset.f] = +s.value; dsBuild(); });
+  $('dsStep1').classList.add('hide'); $('dsStep2').classList.remove('hide'); $('dsReset').classList.remove('hide'); $('dsGo').classList.remove('hide');
+  dsBuild();
+}
+/** Dựng danh sách dòng tiền vào theo cách map cột (bảng khác dùng cùng tên tiêu đề) */
+function dsBuild(){
+  const T = DS.tables, h0 = T[0].rows[T[0].h].map(dsFold), lines = [];
+  let skip = 0, neg = 0;
+  T.forEach((t, ti) => {
+    const head = t.rows[t.h].map(dsFold), m = {};
+    DS_F.forEach(f => { const i = DS.map[f.k]; m[f.k] = i < 0 ? -1 : ti === 0 ? i : head.indexOf(h0[i]); });
+    for (let r = t.h + 1; r < t.rows.length; r++){
+      const row = t.rows[r] || []; if (!row.some(x => String(x).trim())) continue;
+      const day = m.ngay >= 0 ? dsDay(row[m.ngay]) : null, amt = m.tien >= 0 ? dsAmt(row[m.tien]) : NaN;
+      if (day == null){ skip++; continue; }
+      if (!isFinite(amt)){ if (String(row[m.tien] ?? '').trim() === '') neg++; else skip++; continue; }   // ô ghi có trống = dòng tiền ra
+      if (amt <= 0){ neg++; continue; }
+      const nd = m.nd >= 0 ? String(row[m.nd] ?? '') : '';
+      lines.push({i: lines.length, day, amt: Math.round(amt), nd, dig: nd.replace(/\D/g, ''),
+        nh: m.nh >= 0 ? String(row[m.nh] ?? '').trim() : t.ten, ma: m.ma >= 0 ? String(row[m.ma] ?? '').trim() : ''});
+    }
+  });
+  DS.lines = lines;
+  const ds = lines.map(l => l.day), nh = [...new Set(lines.map(l => l.nh).filter(Boolean))];
+  $('dsInfo').innerHTML = lines.length
+    ? `<b>${fmt(lines.length)}</b> dòng tiền vào · từ <b>${dayStr(Math.min(...ds))}</b> đến <b>${dayStr(Math.max(...ds))}</b> · tổng <b>${fmt(lines.reduce((s, l) => s + l.amt, 0))} đ</b>` +
+      (nh.length ? ` · ${nh.length} ngân hàng/tài khoản: ${esc(nh.slice(0, 8).join(', '))}` : '') +
+      (neg ? ` · bỏ ${neg} dòng tiền ra` : '') + (skip ? ` · <span class="neg">bỏ ${skip} dòng không đọc được ngày/số tiền</span>` : '') +
+      `<br>Kiểm tra lại cột bên dưới rồi bấm <b>Đối soát</b>. Dữ liệu sổ đang tải: ${dayStr(RAW.fromDay)} – ${dayStr(Math.min(RAW.toDay, D.today))}.`
+    : '<span class="neg">Chưa đọc được dòng tiền vào nào: chọn lại cột Ngày / Số tiền.</span>';
+  $('dsGo').disabled = !lines.length || DS.map.nd < 0;
+  if (DS.map.nd < 0) $('dsInfo').innerHTML += '<br><span class="neg">Cần chọn cột Nội dung CK.</span>';
+}
+function dsMatch(){
+  const L = DS.lines, ld = L.map(l => l.day);
+  const a = Math.max(Math.min(...ld), D.fromDay), b = Math.min(Math.max(...ld), D.toDay, D.today);
+  const book = ROWS.filter(r => isCK(r) && r.day != null && r.day >= a && r.day <= b && typeof r.tien === 'number' && r.tien > 0)
+    .sort((x, y) => x.day - y.day || x.thRow - y.thRow);
+  const byAmt = new Map();
+  L.forEach(l => { if (l.day >= a - 3 && l.day <= b + 3){ if (!byAmt.has(l.amt)) byAmt.set(l.amt, []); byAmt.get(l.amt).push(l); } });
+  const used = new Set(), M = new Map();
+  const take = (r, l, how) => { used.add(l.i); M.set(r.thRow, {l, how}); };
+  book.forEach(r => {                                            // 1. số tiền + SĐT
+    const ph = phonesOf(r.dg).map(p => p.slice(1)); if (!ph.length) return;
+    const c = (byAmt.get(r.tien) || []).filter(l => !used.has(l.i) && Math.abs(l.day - r.day) <= 3 && ph.some(p => l.dig.includes(p)))
+      .sort((x, y) => Math.abs(x.day - r.day) - Math.abs(y.day - r.day));
+    if (c.length) take(r, c[0], 'sdt');
+  });
+  [0, 1, 2, -1].forEach(dd => book.forEach(r => {                 // 2. số tiền + ngày: cùng ngày → tiền về trễ 1, 2 ngày → sổ ghi trễ 1 ngày
+    if (M.has(r.thRow)) return;
+    const c = (byAmt.get(r.tien) || []).filter(l => !used.has(l.i) && l.day - r.day === dd);
+    if (c.length) take(r, c[0], 'ngay' + Math.abs(dd));
+  }));
+  const khop = book.filter(r => M.has(r.thRow)).map(r => ({r, ...M.get(r.thRow)}));
+  const thieu = book.filter(r => !M.has(r.thRow));
+  const thua = L.filter(l => !used.has(l.i) && l.day >= a && l.day <= b);
+  return {a, b, book, khop, thieu, thua, ngoai: L.filter(l => l.day < a || l.day > b).length};
+}
+const DS_HOW = {sdt:['b-green','Số tiền + SĐT'], ngay0:['b-blue','Số tiền + cùng ngày'], ngay1:['b-amber','Số tiền, lệch 1 ngày'], ngay2:['b-amber','Số tiền, lệch 2 ngày']};
+async function dsRun(){
+  const R = DS.res = dsMatch();
+  if (!R.book.length && !R.thua.length) return toast('Không có dòng CK nào trong sổ trùng khoảng ngày của sao kê (' + dayStr(R.a) + ' – ' + dayStr(R.b) + '). Chọn kỳ xem khác rồi đối soát lại.', 7000);
+  $('dsStep3').classList.remove('hide'); $('dsGo').classList.add('hide'); $('dsMedL').classList.toggle('hide', !P().duyet);
+  DS.saiArm = false; dsRender();
+  const sum = x => x.reduce((s, v) => s + v, 0), nh = [...new Set(DS.lines.map(l => l.nh).filter(Boolean))];
+  try{ await apiT('ghiDoiSoat', {tu:R.a, den:R.b, dongSK:DS.lines.length, so:R.book.length, khop:R.khop.filter(x => x.how === 'sdt').length,
+    khopNgay:R.khop.filter(x => x.how !== 'sdt').length, thieu:R.thieu.length, thieuTien:sum(R.thieu.map(r => r.tien)),
+    thua:R.thua.length, thuaTien:sum(R.thua.map(l => l.amt)), nh: nh.join(', ')}); }catch(e){ /* không chặn đối soát nếu ghi nhật ký lỗi */ }
+}
+function dsRender(){
+  const R = DS.res, sum = a => a.reduce((s, x) => s + x, 0);
+  const chac = R.khop.filter(x => x.how === 'sdt'), med = R.khop.filter(x => x.how !== 'sdt');
+  $('dsKpis').innerHTML = kpiHTML([
+    {l:'Dòng CK trong sổ', v:`<span data-n="${R.book.length}">${fmt(R.book.length)}</span>`, h:`${dayStr(R.a)} – ${dayStr(R.b)} · ${fmtM(sum(R.book.map(r => r.tien)))}`},
+    {l:'Khớp chắc (số tiền + SĐT)', v:`<span class="pos">${fmt(chac.length)}</span>`, h: fmtM(sum(chac.map(x => x.r.tien)))},
+    {l:'Khớp theo số tiền + ngày', v:`<span>${fmt(med.length)}</span>`, h:'nên liếc lại nội dung CK'},
+    {l:'Sổ có – sao kê KHÔNG có', n: sum(R.thieu.map(r => r.tien)), h: R.thieu.length + ' dòng: tiền chưa về tài khoản', hero:true, alert: R.thieu.length > 0},
+    {l:'Sao kê có – sổ không có', n: sum(R.thua.map(l => l.amt)), h: R.thua.length + ' dòng tiền vào chưa ai ghi sổ'}
+  ]);
+  document.querySelectorAll('#dsTabs [data-ds]').forEach(b => b.classList.toggle('on', b.dataset.ds === DS.tab));
+  const kt = r => `<span class="badge ${r.kt === 'OK' ? 'b-green' : r.kt ? 'b-red' : 'b-grey'}">${esc(r.kt || 'Chưa kiểm')}</span>`;
+  const bookTd = r => `<td style="white-space:nowrap">${dayStr(r.day)}</td><td>${esc(r.nv)}<div class="note">${esc(r.vp)} · dòng ${r.srcRow}</div></td><td class="num"><b>${fmt(r.tien)}</b></td><td>${esc(r.dg)}</td>`;
+  const lineTd = l => `<td style="white-space:nowrap">${dayStr(l.day)}</td><td>${esc(l.nh)}${l.ma ? `<div class="note">${esc(l.ma)}</div>` : ''}</td><td class="note" style="max-width:260px">${esc(l.nd)}</td>`;
+  if (DS.tab === 'khop'){
+    $('dsHead').innerHTML = '<tr><th>Ngày sổ</th><th>Nhân viên</th><th class="num">Số tiền</th><th>SĐT / diễn giải</th><th>Khớp theo</th><th>Ngày SK</th><th>NH / mã GD</th><th>Nội dung CK</th><th>KT</th></tr>';
+    $('dsBody').innerHTML = R.khop.slice(0, 600).map(x => `<tr>${bookTd(x.r)}<td><span class="badge how ${DS_HOW[x.how][0]}">${DS_HOW[x.how][1]}</span></td>${lineTd(x.l)}<td>${kt(x.r)}</td></tr>`).join('')
+      || '<tr><td colspan="9" class="empty">Chưa khớp được dòng nào</td></tr>';
+  } else if (DS.tab === 'thieu'){
+    $('dsHead').innerHTML = '<tr><th>Ngày</th><th>Nhân viên</th><th class="num">Số tiền</th><th>SĐT / diễn giải</th><th>KT</th><th>Ghi chú KT</th></tr>';
+    $('dsBody').innerHTML = R.thieu.map(r => `<tr class="bad click" data-th="${r.thRow}">${bookTd(r)}<td>${kt(r)}</td><td>${esc(r.gc)}</td></tr>`).join('')
+      || '<tr><td colspan="6" class="empty">✓ Mọi dòng CK trong sổ đều có tiền về trên sao kê</td></tr>';
+  } else {
+    $('dsHead').innerHTML = '<tr><th>Ngày SK</th><th>NH / mã GD</th><th>Nội dung CK</th><th class="num">Số tiền</th></tr>';
+    $('dsBody').innerHTML = R.thua.slice(0, 600).map(l => `<tr>${lineTd(l)}<td class="num"><b>${fmt(l.amt)}</b></td></tr>`).join('')
+      || '<tr><td colspan="4" class="empty">Không có tiền vào nào ngoài sổ</td></tr>';
+  }
+  const can = x => !x.r.chot && x.r.kt === '';
+  const okList = !P().duyet ? [] : R.khop.filter(x => can(x) && (x.how === 'sdt' || $('dsMed').checked));
+  $('dsOk').textContent = `✓ Duyệt OK ${okList.length} dòng khớp (chưa kiểm)`;
+  $('dsOk').classList.toggle('hide', !okList.length);
+  const saiList = !P().duyet ? [] : R.thieu.filter(r => !r.chot && r.kt !== 'Sai – cần sửa');
+  $('dsSai').textContent = DS.saiArm ? `Bấm lần nữa để ghi "Sai – cần sửa" cho ${saiList.length} dòng` : `✗ Ghi Sai ${saiList.length} dòng không có trên sao kê`;
+  $('dsSai').classList.toggle('hide', !saiList.length);
+  $('dsSai').classList.toggle('primary', DS.saiArm);
+  $('dsNote').innerHTML = `Chỉ đối soát phần ngày trùng giữa sao kê và kỳ đang xem (${dayStr(R.a)} – ${dayStr(R.b)})` + (R.ngoai ? `, bỏ qua ${R.ngoai} dòng sao kê ngoài khoảng này` : '') + '. ' +
+    '<b>"Sổ có – sao kê không có"</b> là dòng NV ghi khách đã chuyển khoản (đã trừ tiền mặt) nhưng tiền <b>không về</b> các tài khoản trong file: hỏi NV ngay, đặc biệt dòng kế toán đã OK theo ảnh chụp. ' +
+    'Trước khi kết luận, chắc chắn file đã gồm <b>đủ mọi tài khoản</b> nhận CK. Ghi OK tự thêm ghi chú "Khớp sao kê" nếu ô ghi chú đang trống.';
+  DS.okList = okList; DS.saiList = saiList;
+}
+$('btnDS').onclick = dsOpen;
+$('dsFile').onchange = e => { const f = e.target.files[0]; if (f) dsLoad(f, null); };
+$('dsPaste').onpaste = () => setTimeout(() => { const t = $('dsPaste').value; if (t.trim()) dsLoad(null, t); }, 0);
+$('dsPaste').onchange = () => { const t = $('dsPaste').value; if (t.trim() && DS && !DS.tables) dsLoad(null, t); };
+$('dsReset').onclick = dsOpen;
+$('dsGo').onclick = dsRun;
+$('dsMed').onchange = () => DS && DS.res && dsRender();
+$('dsTabs').onclick = e => { const b = e.target.closest('[data-ds]'); if (b && DS && DS.res){ DS.tab = b.dataset.ds; dsRender(); } };
+$('dsBody').onclick = e => { const tr = e.target.closest('tr[data-th]'); const r = tr && byTh(+tr.dataset.th); if (r){ closeM('mDS'); openReview({nv: r.nv, q: 'dòng ' + r.srcRow}); } };
+$('dsOk').onclick = async () => {
+  const it = DS.okList.map(x => payload(x.r, 'OK', x.r.gc ? null : 'Khớp sao kê' + (x.l.nh ? ' ' + x.l.nh : '') + ' ' + dayStr(x.l.day).slice(0, 5)));
+  if (!it.length) return;
+  await save(it); if (DS && DS.res) dsRender();
+};
+$('dsSai').onclick = async () => {
+  if (!DS.saiArm){ DS.saiArm = true; dsRender(); return; }
+  DS.saiArm = false;
+  const note = 'Không thấy trên sao kê ' + dayStr(DS.res.a).slice(0, 5) + '–' + dayStr(DS.res.b).slice(0, 5);
+  await save(DS.saiList.map(r => payload(r, 'Sai – cần sửa', r.gc ? r.gc + ' · ' + note : note))); if (DS && DS.res) dsRender();
+};
+$('dsCsv').onclick = () => {
+  const R = DS && DS.res; if (!R) return;
+  const rows = R.thieu.map(r => ['Sổ có – sao kê không', dayStr(r.day), r.nv, r.vp, r.srcRow, r.tien, r.dg, r.kt, ''])
+    .concat(R.thua.map(l => ['Sao kê có – sổ không', dayStr(l.day), '', '', '', l.amt, '', '', l.nh + (l.ma ? ' · ' + l.ma : '') + ' · ' + l.nd]));
+  if (!rows.length) return toast('Không có dòng lệch');
+  downloadCSV('doi-soat-lech_' + dayISO(R.a) + '_' + dayISO(R.b) + '.csv', ['Nhóm', 'Ngày', 'Nhân viên', 'VP', 'Dòng gốc', 'Số tiền', 'SĐT / diễn giải', 'KT', 'Sao kê (NH · mã · nội dung)'], rows);
+};
+
+/* ================== PHÂN QUYỀN (chỉ VVIP) ================== */
+let PQ = null;
+async function pqOpen(){
+  busy(true);
+  try{ PQ = await apiT('layPhanQuyen'); pqRender(); openM('mPQ'); }
+  catch(e){ toast('Lỗi: ' + (e.message || e), 6000); }
+  finally{ busy(false); }
+}
+function pqVal(role, f){ const el = document.querySelector(`#pqBody [data-r="${role}"][data-k="${f.k}"]`);
+  return !el ? null : f.num ? Math.max(0, Math.round(+el.value || 0)) : el.checked; }
+function pqRender(){
+  $('pqHead').innerHTML = '<tr><th>Tính năng</th>' + PQ.roles.map(r => `<th>${esc(r.label)}</th>`).join('') + '</tr>';
+  $('pqBody').innerHTML = PQ.feats.map(f => `<tr><td><b>${esc(f.lb)}</b><div class="note">${esc(f.mo || '')}</div></td>` + PQ.roles.map(r => {
+    const v = r.perm[f.k], d = r.macDinh[f.k];
+    return `<td>${f.num ? `<input type="number" min="0" max="3650" data-r="${r.role}" data-k="${f.k}" value="${v}">`
+      : `<input type="checkbox" data-r="${r.role}" data-k="${f.k}" ${v ? 'checked' : ''} aria-label="${esc(f.lb)} – ${esc(r.label)}">`}` +
+      `<div class="def">${v !== d ? 'mặc định: ' + (f.num ? d : d ? 'bật' : 'tắt') : '&nbsp;'}</div></td>`; }).join('') + '</tr>').join('');
+  pqDiff();
+}
+function pqDiff(){
+  let n = 0;
+  PQ.roles.forEach(r => PQ.feats.forEach(f => { const el = document.querySelector(`#pqBody [data-r="${r.role}"][data-k="${f.k}"]`), v = pqVal(r.role, f);
+    const ch = v !== r.perm[f.k]; el.closest('td').classList.toggle('chg', ch); if (ch) n++; }));
+  $('pqSave').disabled = !n; $('pqSave').textContent = n ? `Lưu ${n} thay đổi` : 'Lưu phân quyền';
+  const warn = PQ.roles.filter(r => pqVal(r.role, PQ.feats.find(f => f.k === 'doisoat')) && !pqVal(r.role, PQ.feats.find(f => f.k === 'duyet'))).map(r => r.label);
+  $('pqNote').innerHTML = (warn.length ? `⚠ ${esc(warn.join(', '))}: có Đối soát nhưng không có Kiểm duyệt → chỉ xem được kết quả khớp, không bấm duyệt / ghi Sai được. ` : '') +
+    'Ô tô vàng = sẽ thay đổi khi lưu. Gợi ý tách bạch nhiệm vụ: người <b>Xác nhận nộp quỹ</b> không nên đồng thời <b>Kiểm duyệt</b> dòng thu chi của cùng NV.';
+}
+$('btnPQ').onclick = pqOpen;
+$('pqBody').addEventListener('input', pqDiff); $('pqBody').addEventListener('change', pqDiff);
+$('pqDef').onclick = () => { PQ.roles.forEach(r => PQ.feats.forEach(f => { const el = document.querySelector(`#pqBody [data-r="${r.role}"][data-k="${f.k}"]`);
+  if (f.num) el.value = r.macDinh[f.k]; else el.checked = !!r.macDinh[f.k]; })); pqDiff(); };
+$('pqSave').onclick = async () => {
+  const cfg = {}; PQ.roles.forEach(r => { cfg[r.role] = {}; PQ.feats.forEach(f => cfg[r.role][f.k] = pqVal(r.role, f)); });
+  $('pqSave').disabled = true; busy(true);
+  try{ PQ = await apiT('luuPhanQuyen', cfg); pqRender(); toast(`Đã lưu ${PQ.doi} thay đổi phân quyền. Người dùng tải lại trang để thấy giao diện mới.`, 5000); closeM('mPQ'); }
+  catch(e){ toast('Lỗi: ' + (e.message || e), 6000); pqDiff(); }
+  finally{ busy(false); }
+};
 
 /* ---- Kiểm kê quỹ đột xuất ---- */
 function openKK(){
@@ -2030,18 +2394,24 @@ document.addEventListener('keydown', e => {
 });
 window.addEventListener('resize', () => { clearTimeout(moveInd._t); moveInd._t = setTimeout(moveInd, 80); });
 document.fonts && document.fonts.ready.then(moveInd);
-matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => D && P().tong && renderOverview());
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => D && seeMoney() && renderOverview());
 
 /* ================== DỮ LIỆU MẪU (chỉ dùng khi xem ngoài Apps Script) ================== */
 const MOCK_API = (() => {
   if (!MOCK) return {};
   let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const pick = a => a[Math.floor(rnd()*a.length)];
-  const ROLES = { VVIP:{label:'VVIP',days:0,duyet:true,quy:true,log:true,gom:true,ruiro:true,tong:true}, KE_TOAN:{label:'Kế toán',days:6,duyet:true,quy:false,log:false,gom:true,ruiro:false,tong:false},
-    THU_QUY:{label:'Thủ quỹ',days:6,duyet:false,quy:true,log:false,gom:false,ruiro:false,tong:false}, VIP:{label:'VIP',days:6,duyet:false,quy:false,log:false,gom:false,ruiro:false,tong:false} };
+  const ROLES = { VVIP:{label:'VVIP',days:0,tongquan:true,duyet:true,doisoat:true,quy:true,kiemke:true,log:true,gom:true,ruiro:true,tong:true},
+    KE_TOAN:{label:'Kế toán',days:6,tongquan:false,duyet:true,doisoat:true,quy:false,kiemke:false,log:false,gom:true,ruiro:false,tong:false},
+    THU_QUY:{label:'Thủ quỹ',days:6,tongquan:false,duyet:false,doisoat:false,quy:true,kiemke:true,log:false,gom:false,ruiro:false,tong:false},
+    VIP:{label:'VIP',days:6,tongquan:false,duyet:false,doisoat:false,quy:false,kiemke:false,log:false,gom:false,ruiro:false,tong:false} };
+  const FEAT = [{k:'days',lb:'Số ngày được xem lùi',mo:'0 = không giới hạn',num:true},{k:'tongquan',lb:'Xem Tổng quan & tổng tiền'},{k:'duyet',lb:'Kiểm duyệt (ghi OK / Sai)'},
+    {k:'doisoat',lb:'Đối soát sao kê',mo:'Cần thêm Kiểm duyệt để bấm duyệt'},{k:'quy',lb:'Xác nhận nộp quỹ'},{k:'kiemke',lb:'Kiểm kê quỹ đột xuất'},{k:'gom',lb:'Bấm "Gom lại"'},{k:'ruiro',lb:'Xem tab Rủi ro'},{k:'log',lb:'Xem Nhật ký'}];
+  const OVR = {};
   const USERS = { vvip:['Anh Chủ','VVIP'], ketoan:['Ngọc KT','KE_TOAN'], thuquy:['Chị Thủ quỹ','THU_QUY'], vip:['Anh VIP','VIP'] };
   const sessions = {}; let chotDen = 0;
-  const perm = r => Object.assign({role:r}, ROLES[r]);
+  const perm = r => Object.assign({role:r}, ROLES[r], r === 'VVIP' ? {} : OVR[r] || {});
+  const pqData = () => ({feats: FEAT, roles: ['KE_TOAN','THU_QUY','VIP'].map(r => ({role:r, label:ROLES[r].label, perm:perm(r), macDinh:Object.assign({role:r}, ROLES[r])}))});
   const auth = t => { const u = sessions[t]; if (!u) throw new Error('PHIEN_HET_HAN'); return u; };
   const names = ['P.Nhí','Ngọc Trí','Hồ Trang','Thu Mai','Ngọc My','Ngọc Thiên','Yến Nhi','Thanh Nhàn','Thanh Diễm','Quỳnh Như','Ngọc Long','Anh Tuấn','Nhật Linh','Hoàng Huy','Kim Hoàng','Loan Ty','Hồng Xuyến','Mỹ Uyên','Duy Tiến','Huy con','Trường Duy','Minh Thảo','Quốc Phong'];
   const nv = names.map((t,i) => ({ma:'NV'+String(i+1).padStart(2,'0'), ten:t, bp:'Phòng vé', vp:i<13?'PVSG':'PVĐL', ton:Math.round(rnd()*20)*100000}))
@@ -2141,7 +2511,17 @@ const MOCK_API = (() => {
       return {from, den, chotTruoc:chotDen, soDong:K.length, thu:K.filter(r=>r.loai==='THU').reduce((a,r)=>a+r.tien,0), chi:K.filter(r=>r.loai==='CHI'&&!/Nộp quỹ/.test(r.nd)).reduce((a,r)=>a+r.tien,0),
         nop:K.filter(r=>/Nộp quỹ/.test(r.nd)).reduce((a,r)=>a+r.tien,0), choKiem:K.filter(r=>!r.kt).length, sai:K.filter(r=>r.kt==='Sai – cần sửa').length, coCo:K.filter(r=>r.flag).length,
         nopCho:K.filter(r=>/Nộp quỹ/.test(r.nd)&&!r.quy).length, nopChoTien:0, thieuNgay:0, nv:names.map(n=>[n, '', Math.round(rnd()*5e6)])}; },
-    kiemKeQuy(t, ten, dem, note){ const s = auth(t); if (!s.perm.tong && !s.perm.quy) throw new Error('Chỉ VVIP / Thủ quỹ được kiểm kê quỹ');
+    layPhanQuyen(t){ const s = auth(t); if (!s.perm.tong) throw new Error('Chỉ VVIP'); return pqData(); },
+    luuPhanQuyen(t, cfg){ const s = auth(t); if (!s.perm.tong) throw new Error('Chỉ VVIP'); let doi = 0;
+      Object.keys(cfg).forEach(r => { if (!ROLES[r] || r === 'VVIP') return; const cur = perm(r), o = {};
+        FEAT.forEach(f => { const v = f.num ? Math.max(0, Math.round(+cfg[r][f.k] || 0)) : !!cfg[r][f.k]; if (v !== ROLES[r][f.k]) o[f.k] = v;
+          if (v !== cur[f.k]){ doi++; log.push([at(today, 17), s.ten, s.perm.role, 'SỬA PHÂN QUYỀN', ROLES[r].label, null, f.lb, '', f.num ? cur[f.k] + ' ngày' : cur[f.k] ? 'BẬT' : 'TẮT', f.num ? v + ' ngày' : v ? 'BẬT' : 'TẮT', 'Vai trò ' + ROLES[r].label]); } });
+        OVR[r] = o; Object.values(sessions).forEach(x => { if (x.perm.role === r) x.perm = perm(r); }); });
+      return Object.assign(pqData(), {doi}); },
+    ghiDoiSoat(t, x){ const s = auth(t); if (!s.perm.doisoat) throw new Error('Không có quyền đối soát');
+      log.push([at(today, 16), s.ten, s.perm.role, 'ĐỐI SOÁT SAO KÊ', '', x.den, 'CHI - KH chuyển khoản', -x.thieuTien, x.khop + ' khớp chắc / ' + x.so + ' dòng CK', x.thieu + ' dòng sổ không có trên sao kê', 'Sao kê ' + dayStr(x.tu) + ' – ' + dayStr(x.den)]);
+      return true; },
+    kiemKeQuy(t, ten, dem, note){ const s = auth(t); if (!s.perm.kiemke) throw new Error('Không có quyền kiểm kê quỹ');
       const o = (nv.find(x => x.ten === ten) || {ton:0}).ton;
       const he = all.filter(r => r.nv === ten && r.day <= today).reduce((a, r) => a + (r.loai === 'THU' ? r.tien : -r.tien), o), ch = dem - he;
       const kq = Math.abs(ch) <= 10000 ? 'KHỚP' : (ch < 0 ? 'THIẾU ' : 'THỪA ') + fmt(Math.abs(ch)), by = s.ten + ' · ' + at(today, 15);
