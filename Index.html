@@ -882,6 +882,7 @@ $('loginForm').onsubmit = async e => {
 };
 $('btnOut').onclick = () => logout(false);
 
+/*@TC-MOC-1/6 — mốc kiểm tra dán đủ file, không xoá*/
 /* ================== KỲ BÁO CÁO ================== */
 function setPreset(p){
   const td = localToday(), t = dayToDate(td), y = t.getUTCFullYear(), m = t.getUTCMonth();
@@ -1250,6 +1251,7 @@ function drawTrend(labels, T, C, N){
 }
 
 /* ---- Bản đồ ngày ---- */
+/*@TC-MOC-2/6 — mốc kiểm tra dán đủ file, không xoá*/
 function renderClose(){
   const last = Math.min(D.toDay, D.today), first = Math.max(D.fromDay, last - 30);
   const days = []; for (let d = first; d <= last; d++) days.push(d);
@@ -1647,6 +1649,7 @@ function computeRisk(){
   return {list, listRev, base, enough, phones, plates, noPlateN, noPlateT, xeTotal, xeDup, AU, au, rv: reviewerStats(), RVN};
 }
 
+/*@TC-MOC-3/6 — mốc kiểm tra dán đủ file, không xoá*/
 /* ================== PHÂN TÍCH DOANH THU VÉ (chỉ dùng dữ liệu sẵn có) ==================
    1. Bước giá: tự suy ra từ dữ liệu (đơn vị lớn nhất chia hết ≥ 95% dòng bán vé) → dòng lệch bước = nghi gõ sai / bớt tiền
    2. So với đồng nghiệp: mỗi ngày, mỗi VP lấy trung vị bán vé của các NV khác có nhập THU hôm đó
@@ -2009,6 +2012,7 @@ function dsBuild(){
   $('dsGo').disabled = !lines.length || DS.map.nd < 0;
   if (DS.map.nd < 0) $('dsInfo').innerHTML += '<br><span class="neg">Cần chọn cột Nội dung CK.</span>';
 }
+/*@TC-MOC-4/6 — mốc kiểm tra dán đủ file, không xoá*/
 function dsMatch(){
   const L = DS.lines, ld = L.map(l => l.day);
   const a = Math.max(Math.min(...ld), D.fromDay), b = Math.min(Math.max(...ld), D.toDay, D.today);
@@ -2542,6 +2546,8 @@ if (MOCK){ $('mockBanner').classList.remove('hide'); $('mockHint').classList.rem
   }
   showLogin();
 })();
+window.__TC_BUILD = '2026-11-12b'; /*@TC-MOC-5/6*/
 </script>
+<!--@TC-MOC-6/6-->
 </body>
 </html>
